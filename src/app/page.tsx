@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <BaseLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Hero Section */}
+        {/* hero section */}
         <div className="text-center mb-20">
           <h1 className="text-5xl font-bold mb-6">
             Connect with Top Freelance Talent in Nepal
@@ -26,7 +26,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Features */}
+        {/* features */}
         <div className="grid md:grid-cols-2 gap-12">
           <div className="flex gap-4">
             <Briefcase className="w-12 h-12 text-primary flex-shrink-0" />
