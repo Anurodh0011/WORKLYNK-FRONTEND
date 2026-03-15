@@ -2,16 +2,10 @@
 
 /**
  * Base fetcher for useSWR GET requests
- * @param {[string, string|null]} param0 [url, token]
+ * @param {string} url
  */
-export const baseFetcher = async ([url, token]) => {
-  const headers = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
+export const baseFetcher = async (url) => {
   const response = await fetch(url, {
-    headers,
     credentials: "include",
   });
 
@@ -33,13 +27,7 @@ export const baseFetcher = async ([url, token]) => {
  * @param {{ arg: any }} options
  */
 export const mutationFetcher = async (url, { arg }) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const headers = {};
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   let body = arg;
 
   // If body is NOT FormData, stringify it
@@ -47,8 +35,6 @@ export const mutationFetcher = async (url, { arg }) => {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(body);
   }
-
-  // Note: For FormData, we let the browser set the Content-Type with boundary
 
   const response = await fetch(url, {
     method: "POST",

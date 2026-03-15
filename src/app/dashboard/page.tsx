@@ -2,14 +2,14 @@
 
 import React from "react";
 import BaseLayout from "@/src/app/components/base-layout";
-import { useUser } from "@/src/hooks/useUser";
+import { useAuthContext } from "@/src/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Users, Briefcase, Plus, Settings, MessageSquare, Heart } from "lucide-react";
 
 export default function UserDashboard() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading }: any = useAuthContext();
   const router = useRouter();
 
   if (isLoading) {

@@ -4,8 +4,7 @@ import Link from "next/link";
 import { Menu, X, LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { useUser } from "@/src/hooks/useUser";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuthContext } from "@/src/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -19,14 +18,12 @@ import {
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, isLoading } = useUser();
-  const { logout } = useAuth();
+  const { user, isLoading, logout }: any = useAuthContext();
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
       await logout();
-      localStorage.removeItem("auth_token");
       toast.success("Logged out successfully");
       router.push("/");
     } catch (error) {

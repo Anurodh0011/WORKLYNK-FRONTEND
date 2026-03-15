@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuthContext } from "@/src/context/AuthContext";
 import BaseLayout from "@/src/app/components/base-layout";
 import {
   Card,
@@ -15,49 +15,69 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { toast } from "sonner";
+import { loginSchema } from "@/src/utils/zod/auth.schema";
+import { Spinner } from "@/src/app/components/ui/spinner"; 
 
 export default function Login() {
   const router = useRouter();
-  const { login, isLoggingIn } = useAuth();
+  const { login, isLoading: isAuthLoading } = useAuthContext();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setErrors({});
 
+    // 1. Client-side Zod Validation
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
+      });
+      setErrors(fieldErrors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 2. Prepare FormData
     const formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
 
     try {
-      const result = await login(formData);
+      const result: any = await login(formData);
       
       if (result.success) {
-        if (result.data?.session?.token) {
-           localStorage.setItem("auth_token", result.data.session.token);
-        }
-        
         toast.success("Login successful!");
         
-        // Redirect based on role if needed
-        if (result.data?.user?.role === "ADMIN") {
+        // Redirect based on role
+        if (result.user?.role === "ADMIN") {
             router.push("/admin/dashboard");
         } else {
-            router.push("/"); // Normal user home
+            router.push("/");
         }
+      } else {
+        toast.error(result.message || "Invalid credentials");
       }
     } catch (error: any) {
-      toast.error(error.message || "Invalid credentials");
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <BaseLayout>
       <div className="max-w-md mx-auto px-4 py-12">
-        <Card>
+        <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Sign in to your account</CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
+            <CardDescription className="text-center">Sign in to your account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,34 +89,33 @@ export default function Login() {
                   placeholder="you@example.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
+                  className={errors.email ? "border-red-500" : ""}
                 />
+                {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <a href="/auth/recover-password" title="Recover your password" className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </a>
+                </div>
                 <Input 
                   id="password" 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
+                  className={errors.password ? "border-red-500" : ""}
                 />
+                {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isLoggingIn}>
-                {isLoggingIn ? "Logging in..." : "Login"}
+              <Button type="submit" className="w-full" disabled={isSubmitting || isAuthLoading}>
+                {isSubmitting ? "Logging in..." : "Login"}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                <a
-                  href="/auth/recover-password"
-                  className="text-primary hover:underline"
-                >
-                  Forgot password?
-                </a>
-              </p>
             </form>
-            <p className="text-sm text-center text-muted-foreground mt-4">
+            <p className="text-sm text-center text-muted-foreground mt-6">
               Don&apos;t have an account?{" "}
-              <a href="/auth/register" className="text-primary hover:underline">
+              <a href="/auth/register" className="text-primary font-semibold hover:underline">
                 Register here
               </a>
             </p>

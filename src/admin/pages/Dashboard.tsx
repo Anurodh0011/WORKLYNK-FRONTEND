@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/src/hooks/useUser";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuthContext } from "@/src/context/AuthContext";
 import { Button } from "@/src/app/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { toast } from "sonner";
@@ -11,13 +10,11 @@ import { LogOut, User, LayoutDashboard, Settings } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, isLoading } = useUser();
-  const { logout } = useAuth();
+  const { user, isLoading, logout }: any = useAuthContext();
 
   const handleLogout = async () => {
     try {
       await logout();
-      localStorage.removeItem("auth_token");
       toast.success("Logged out successfully");
       router.push("/admin/login");
     } catch (error) {
