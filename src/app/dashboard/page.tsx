@@ -2,7 +2,7 @@
 
 import React from "react";
 import BaseLayout from "@/src/app/components/base-layout";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -30,11 +30,11 @@ export default function UserDashboard() {
             <p className="text-muted-foreground">You are logged in as a <span className="text-primary font-medium">{user.role}</span></p>
           </div>
           <div className="flex gap-2">
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => router.push(user.role === "CLIENT" ? "/projects/new" : "/profile/freelancer")}>
               <Plus size={18} />
               {user.role === "CLIENT" ? "Post a Project" : "Build Profile"}
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => router.push("/profile")}>
               <Settings size={18} />
               Settings
             </Button>
@@ -104,7 +104,9 @@ export default function UserDashboard() {
             <CardContent>
                <div className="text-center py-10">
                  <p className="text-muted-foreground italic">Complete your profile to get personalized recommendations.</p>
-                 <Button variant="link">Complete Profile</Button>
+                 <Button variant="link" onClick={() => router.push(user.role === "FREELANCER" ? "/profile/freelancer" : "/profile")}>
+                    Complete Profile
+                 </Button>
               </div>
             </CardContent>
           </Card>

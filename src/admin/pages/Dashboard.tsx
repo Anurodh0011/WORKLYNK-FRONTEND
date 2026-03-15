@@ -2,11 +2,11 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { Button } from "@/src/app/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { toast } from "sonner";
-import { LogOut, User, LayoutDashboard, Settings } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Settings, ShieldCheck } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-bold text-primary">WorkLynk Admin</h1>
         </div>
         <nav className="flex-1 p-4 space-y-2">
-          <a href="#" className="flex items-center space-x-3 p-3 bg-primary/10 text-primary rounded-lg">
+          <a href="/admin/dashboard" className="flex items-center space-x-3 p-3 bg-primary/10 text-primary rounded-lg">
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
           </a>
@@ -55,6 +55,10 @@ export default function AdminDashboard() {
           <a href="#" className="flex items-center space-x-3 p-3 text-muted-foreground hover:bg-slate-100 rounded-lg transition-colors">
             <Settings size={20} />
             <span>Settings</span>
+          </a>
+          <a href="/admin/verifications" className="flex items-center space-x-3 p-3 text-muted-foreground hover:bg-slate-100 rounded-lg transition-colors">
+            <ShieldCheck size={20} />
+            <span>Verifications</span>
           </a>
         </nav>
         <div className="p-4 border-t">

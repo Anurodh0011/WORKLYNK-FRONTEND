@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import BaseLayout from "@/src/app/components/base-layout";
 import {
   Card,
