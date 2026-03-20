@@ -16,12 +16,16 @@ import {
   CheckCircle2, 
   ChevronRight, 
   ChevronLeft,
+  Heart,
+  UserCircle,
   Save
 } from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
-import { mutationFetcher } from "@/src/helpers/fetcher";
+import { mutationFetcher, baseFetcher } from "@/src/helpers/fetcher";
 import { Checkbox } from "../ui/checkbox";
+import useSWR from "swr";
+import Link from "next/link";
 
 interface ProjectApplyFormProps {
   projectId: string;
@@ -31,6 +35,13 @@ interface ProjectApplyFormProps {
 }
 
 export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCancel }: ProjectApplyFormProps) {
+  const { data: profileData, isLoading: isProfileLoading } = useSWR(`${API_BASE_URL}/freelancer/profile`, baseFetcher);
+  const profile = profileData?.data?.user?.profile;
+  
+  const isProfileComplete = useMemo(() => {
+    return profile?.headline && profile?.skills && profile.skills.length > 0;
+  }, [profile]);
+
   const [currentStep, setCurrentStep] = useState(checklist.length > 0 ? 1 : 2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -72,6 +83,11 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
   };
 
   const handleSubmit = async (status = "PENDING") => {
+    if (!isProfileComplete) {
+      toast.error("Please complete your profile (headline & skills) before applying.");
+      return;
+    }
+
     if (status === "PENDING" && !isChecklistComplete && checklist.length > 0) {
       toast.error("Please confirm all checklist items before submitting.");
       return;
@@ -108,6 +124,39 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
       setIsSavingDraft(false);
     }
   };
+
+  if (isProfileLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 space-y-4">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-muted-foreground font-bold animate-pulse text-xs uppercase tracking-widest">Checking Profile Status</p>
+      </div>
+    );
+  }
+
+  if (!isProfileComplete) {
+    return (
+      <div className="p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto text-orange-500">
+          <UserCircle size={48} />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black tracking-tight mb-2">Profile Incomplete</h2>
+          <p className="text-muted-foreground max-w-xs mx-auto font-medium">
+            You need to add a <span className="text-foreground font-bold underline">headline</span> and <span className="text-foreground font-bold underline">skills</span> to your profile before you can apply for projects.
+          </p>
+        </div>
+        <div className="pt-4">
+          <Button asChild className="h-12 w-full rounded-xl font-bold text-lg shadow-xl shadow-primary/20">
+            <Link href="/dashboard/profile">Complete My Profile</Link>
+          </Button>
+          <Button variant="ghost" className="mt-4 w-full rounded-xl font-bold" onClick={onCancel}>
+            Maybe Later
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const renderChecklistStep = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">

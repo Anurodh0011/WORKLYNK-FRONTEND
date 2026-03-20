@@ -25,9 +25,7 @@ export default function BrowseProjectsPage() {
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4 text-foreground/90">
             Find your next{" "}
-            <span className="text-primary italic underline underline-offset-8">
-              Dream Project
-            </span>
+            <span className="text-primary italic">Dream Project</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Browse through thousands of open projects and apply to those that

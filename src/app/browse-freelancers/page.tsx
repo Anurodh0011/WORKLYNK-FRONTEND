@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Star, MapPin, Search, Loader2, Save, ExternalLink, Filter } from "lucide-react";
+import { Search, MapPin, Star, Filter, Heart, User, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
 import BaseLayout from "../components/base-layout";
 import {
   Card,
@@ -23,10 +23,12 @@ export default function BrowseFreelancers() {
   const { user }: any = useAuthContext();
   const [searchTerm, setSearchTerm] = useState("");
   const { data, isLoading, mutate } = useSWR(`${API_BASE_URL}/freelancer`, baseFetcher);
+  const { data: savedData, mutate: mutateSaved } = useSWR(user?.role === "CLIENT" ? `${API_BASE_URL}/bookmarks/freelancers` : null, baseFetcher);
 
   const freelancers = data?.data || [];
+  const savedFreelancers = savedData?.data?.map((item: any) => item.freelancerId) || [];
 
-  const handleToggleSave = async (freelancerId: string) => {
+  const toggleSave = async (freelancerId: string) => {
     if (!user || user.role !== "CLIENT") {
       toast.error("Only clients can save freelancers.");
       return;
@@ -38,7 +40,7 @@ export default function BrowseFreelancers() {
       });
       if (response.success) {
         toast.success(response.message);
-        mutate();
+        mutateSaved(); // Revalidate saved freelancers list
       }
     } catch (error) {
       toast.error("Failed to update saved list.");
@@ -88,10 +90,13 @@ export default function BrowseFreelancers() {
                    <Button 
                      variant="ghost" 
                      size="icon" 
-                     className="absolute top-4 right-4 z-10 rounded-full h-10 w-10 bg-background/20 backdrop-blur-md text-white hover:bg-background/40"
-                     onClick={() => handleToggleSave(freelancer.id)}
+                     className={`absolute top-4 right-4 rounded-full h-10 w-10 transition-all ${savedFreelancers.includes(freelancer.id) ? "text-red-500 bg-red-50" : "bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       toggleSave(freelancer.id);
+                     }}
                    >
-                     <Save size={18} />
+                     <Heart size={18} className={savedFreelancers.includes(freelancer.id) ? "fill-current" : ""} />
                    </Button>
                 )}
 

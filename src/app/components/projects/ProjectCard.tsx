@@ -4,7 +4,7 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Clock, Briefcase, MapPin, CheckCircle2, IndianRupee, Save } from "lucide-react";
+import { Heart, CheckCircle2, Clock, Briefcase, MapPin, IndianRupee, Search, FileText, Calendar, Star, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { mutationFetcher } from "@/src/helpers/fetcher";
@@ -69,19 +69,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 border-none shadow-md bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col h-full relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`absolute top-4 right-4 z-10 rounded-full h-10 w-10 transition-all ${
-          isBookmarked 
-            ? "bg-primary/20 text-primary hover:bg-primary/30" 
-            : "bg-background/20 backdrop-blur-md text-white hover:bg-background/40"
-        }`}
-        onClick={toggleBookmark}
-        disabled={isToggling}
-      >
-        <Save size={18} className={isBookmarked ? "fill-current" : ""} />
-      </Button>
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+           <Button
+             variant="ghost"
+             size="icon"
+             className={`rounded-full h-10 w-10 bg-background/20 backdrop-blur-md transition-all ${isBookmarked ? "text-red-500 bg-red-50/80 shadow-lg shadow-red-500/20" : "text-white hover:bg-background/40"}`}
+             onClick={(e) => {
+               e.stopPropagation();
+               toggleBookmark(e);
+             }}
+             disabled={isToggling}
+           >
+             <Heart size={18} className={isBookmarked ? "fill-current" : ""} />
+           </Button>
+        </div>
 
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start gap-4">

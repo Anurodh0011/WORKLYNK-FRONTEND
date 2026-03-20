@@ -5,7 +5,7 @@ import BaseLayout from "@/src/app/components/base-layout";
 import useSWR from "swr";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { baseFetcher, mutationFetcher } from "@/src/helpers/fetcher";
-import { Users, Search, Loader2, Star, MapPin, ExternalLink, Trash2 } from "lucide-react";
+import { User, MapPin, Star, Trash2, ExternalLink, Heart, Loader2 } from "lucide-react";
 import { Button } from "@/src/app/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/src/app/components/ui/badge";
@@ -38,7 +38,7 @@ export default function SavedFreelancersPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <Users className="text-primary" size={32} />
+              <User className="text-primary" size={32} />
               Saved Talents
             </h1>
             <p className="text-muted-foreground mt-2 font-medium">
@@ -121,7 +121,7 @@ export default function SavedFreelancersPage() {
         ) : (
           <div className="bg-card/50 backdrop-blur-md rounded-3xl p-20 border-2 border-dashed flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-300">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-              <Users size={40} className="text-primary" />
+              <Heart size={40} className="text-primary" />
             </div>
             <h2 className="text-2xl font-bold mb-2">No saved talents yet</h2>
             <p className="text-muted-foreground max-w-sm mb-8 font-medium">

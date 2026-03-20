@@ -6,7 +6,7 @@ import useSWR from "swr";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { baseFetcher } from "@/src/helpers/fetcher";
 import { ProjectCard } from "@/src/app/components/projects/ProjectCard";
-import { Bookmark, FolderOpen, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/src/app/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -22,7 +22,7 @@ export default function SavedProjectsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <Bookmark className="text-primary fill-current" size={32} />
+              <Heart className="text-primary" size={32} />
               Saved Projects
             </h1>
             <p className="text-muted-foreground mt-2 font-medium">
@@ -51,7 +51,7 @@ export default function SavedProjectsPage() {
         ) : (
           <div className="bg-card/50 backdrop-blur-md rounded-3xl p-20 border-2 border-dashed flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-300">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-              <FolderOpen size={40} className="text-primary" />
+              <Heart size={40} className="text-primary" />
             </div>
             <h2 className="text-2xl font-bold mb-2">No saved projects yet</h2>
             <p className="text-muted-foreground max-w-sm mb-8 font-medium">

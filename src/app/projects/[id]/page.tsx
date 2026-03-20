@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   ExternalLink,
   ChevronRight,
-  Save
+  Heart
 } from "lucide-react";
 import { Button } from "@/src/app/components/ui/button";
 import { Badge } from "@/src/app/components/ui/badge";
@@ -144,15 +144,15 @@ export default function ProjectDetailsPage() {
                   {project.title}
                 </h1>
                 <div className="flex gap-3">
-                   {user?.role === "FREELANCER" && (
+                    {user?.role === "FREELANCER" && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={`h-12 w-12 rounded-2xl border transition-all ${isBookmarked ? "bg-primary/20 text-primary border-primary/20" : "bg-muted/50 border-muted-foreground/10 hover:border-primary/20"}`}
+                        className={`h-12 w-12 rounded-2xl border transition-all ${isBookmarked ? "bg-red-50 text-red-500 border-red-500/20" : "bg-muted/50 border-muted-foreground/10 hover:border-red-500/20"}`}
                         onClick={toggleBookmark}
                         disabled={isToggling}
                       >
-                         <Save size={20} className={isBookmarked ? "fill-current" : ""} />
+                         <Heart size={20} className={isBookmarked ? "fill-current" : ""} />
                       </Button>
                    )}
                    <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl border-muted-foreground/10" onClick={() => {
