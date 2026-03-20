@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Menu, X, LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {

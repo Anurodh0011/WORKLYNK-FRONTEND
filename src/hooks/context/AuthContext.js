@@ -1,10 +1,16 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
-import { baseFetcher, mutationFetcher } from "../helpers/fetcher";
-import { API_BASE_URL } from "../helpers/config";
+import { baseFetcher, mutationFetcher } from "../../helpers/fetcher";
+import { API_BASE_URL } from "../../helpers/config";
 import { toast } from "sonner";
 
 const AuthContext = createContext({
@@ -17,15 +23,16 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  const { data: userData, error, mutate, isLoading } = useSWR(
-    `${API_BASE_URL}/auth/me`,
-    baseFetcher,
-    {
-      shouldRetryOnError: false,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true
-    }
-  );
+  const {
+    data: userData,
+    error,
+    mutate,
+    isLoading,
+  } = useSWR(`${API_BASE_URL}/auth/me`, baseFetcher, {
+    shouldRetryOnError: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   const fetchUser = useCallback(async () => {
     return await mutate();
@@ -33,17 +40,17 @@ export const AuthProvider = ({ children }) => {
 
   const { trigger: loginTrigger } = useSWRMutation(
     `${API_BASE_URL}/auth/login`,
-    mutationFetcher
+    mutationFetcher,
   );
 
   const { trigger: registerTrigger } = useSWRMutation(
     `${API_BASE_URL}/auth/register`,
-    mutationFetcher
+    mutationFetcher,
   );
 
   const { trigger: logoutTrigger } = useSWRMutation(
     `${API_BASE_URL}/auth/logout`,
-    mutationFetcher
+    mutationFetcher,
   );
 
   /**
