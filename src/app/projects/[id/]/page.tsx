@@ -17,13 +17,16 @@ import {
   User,
   ShieldCheck,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Save
 } from "lucide-react";
 import { Button } from "@/src/app/components/ui/button";
 import { Badge } from "@/src/app/components/ui/badge";
-import { Card, CardContent } from "@/src/app/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/src/app/components/ui/card";
 import { ProjectApplyForm } from "@/src/app/components/projects/ProjectApplyForm";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
+import { toast } from "sonner";
+import { mutationFetcher } from "@/src/helpers/fetcher";
 import { 
   Dialog, 
   DialogContent, 
@@ -44,6 +47,36 @@ export default function ProjectDetailsPage() {
   );
 
   const project = data?.data;
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+
+  // Sync bookmark state when project data loads
+  React.useEffect(() => {
+    if (project) {
+       setIsBookmarked(project.isBookmarked);
+    }
+  }, [project]);
+
+  const toggleBookmark = async () => {
+    if (!user) {
+      toast.error("Please login to save projects.");
+      return;
+    }
+    setIsToggling(true);
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/bookmarks/projects/${id}/toggle`, {
+        arg: {}
+      });
+      if (response.success) {
+        setIsBookmarked(response.data.bookmarked);
+        toast.success(response.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update bookmark.");
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -106,9 +139,48 @@ export default function ProjectDetailsPage() {
                 </span>
               </div>
               
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 tracking-tight leading-tight">
-                {project.title}
-              </h1>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-4">
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                  {project.title}
+                </h1>
+                <div className="flex gap-3">
+                   {user?.role === "FREELANCER" && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={`h-12 w-12 rounded-2xl border transition-all ${isBookmarked ? "bg-primary/20 text-primary border-primary/20" : "bg-muted/50 border-muted-foreground/10 hover:border-primary/20"}`}
+                        onClick={toggleBookmark}
+                        disabled={isToggling}
+                      >
+                         <Save size={20} className={isBookmarked ? "fill-current" : ""} />
+                      </Button>
+                   )}
+                   <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl border-muted-foreground/10" onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: project.title, url: window.location.href });
+                      }
+                   }}>
+                      <ExternalLink size={20} />
+                   </Button>
+                </div>
+              </div>
+
+              {project.myApplication && (
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-8 flex items-center justify-between animate-in slide-in-from-left-4 duration-500">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary">
+                         <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                         <p className="text-sm font-bold">You've already expressed interest</p>
+                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Status: <span className="text-primary font-bold">{project.myApplication.status}</span></p>
+                      </div>
+                   </div>
+                   <Button variant="ghost" className="text-primary font-bold hover:bg-primary/10 rounded-xl" onClick={() => router.push("/dashboard/applications")}>
+                      View My Proposal
+                   </Button>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 p-6 bg-muted/30 rounded-2xl border border-muted-foreground/10 mb-8">
                 <div className="space-y-1">

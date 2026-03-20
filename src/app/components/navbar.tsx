@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, LogOut, User as UserIcon, LayoutDashboard, PlusCircle, Briefcase, Search, ShieldCheck, Bookmark } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, LayoutDashboard, PlusCircle, Briefcase, Search, ShieldCheck, Bookmark, Users } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
@@ -70,6 +70,9 @@ export function Navbar() {
           </Link>
           <Link href="/browse-freelancers" className="hover:text-secondary-foreground flex items-center gap-1">
             <Search size={16} /> Freelancers
+          </Link>
+          <Link href="/dashboard/saved-freelancers" className="hover:text-secondary-foreground flex items-center gap-1">
+            <Users className="mr-1 h-4 w-4" /> Saved
           </Link>
         </>
       );

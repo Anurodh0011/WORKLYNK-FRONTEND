@@ -12,12 +12,12 @@ import {
 } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import useSWR from "swr";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { baseFetcher, mutationFetcher } from "@/src/helpers/fetcher";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { toast } from "sonner";
 import { Input } from "@/src/components";
+import useSWR from "swr";
 
 export default function BrowseFreelancers() {
   const { user }: any = useAuthContext();
