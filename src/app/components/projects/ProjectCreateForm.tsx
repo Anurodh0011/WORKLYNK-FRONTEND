@@ -50,6 +50,7 @@ interface ProjectFormData {
   budgetMax: string;
   checklist: string[];
   status: string;
+  [key: string]: any; // Index signature for easier mapping
 }
 
 export default function ProjectCreateForm() {
@@ -97,7 +98,7 @@ export default function ProjectCreateForm() {
     }
   };
 
-  const removeSkill = (skill) => {
+  const removeSkill = (skill: string) => {
     setFormData((prev) => ({
       ...prev,
       skillsRequired: prev.skillsRequired.filter((s) => s !== skill),
@@ -114,20 +115,20 @@ export default function ProjectCreateForm() {
     }
   };
 
-  const removeChecklistItem = (item) => {
+  const removeChecklistItem = (item: string) => {
     setFormData((prev) => ({
       ...prev,
       checklist: prev.checklist.filter((i) => i !== item),
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+      setFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
     }
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -166,7 +167,7 @@ export default function ProjectCreateForm() {
       } else {
         toast.error(response.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message || "Something went wrong while posting project.");
     } finally {
       setIsSubmitting(false);
