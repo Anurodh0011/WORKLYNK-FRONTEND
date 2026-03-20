@@ -65,7 +65,7 @@ export function Navbar() {
           <Link href="/projects/new" className="hover:text-secondary-foreground flex items-center gap-1">
             <PlusCircle size={16} /> Post Project
           </Link>
-          <Link href="/dashboard" className="hover:text-secondary-foreground flex items-center gap-1">
+          <Link href="/dashboard/projects" className="hover:text-secondary-foreground flex items-center gap-1">
             <Briefcase size={16} /> My Projects
           </Link>
           <Link href="/browse-freelancers" className="hover:text-secondary-foreground flex items-center gap-1">
@@ -81,8 +81,8 @@ export function Navbar() {
           <Link href="/browse-projects" className="hover:text-secondary-foreground flex items-center gap-1">
             <Search size={16} /> Browse Projects
           </Link>
-          <Link href="/dashboard" className="hover:text-secondary-foreground flex items-center gap-1">
-            <Briefcase size={16} /> My Jobs
+          <Link href="/dashboard/applications" className="hover:text-secondary-foreground flex items-center gap-1">
+            <Briefcase size={16} /> My Applications
           </Link>
         </>
       );
