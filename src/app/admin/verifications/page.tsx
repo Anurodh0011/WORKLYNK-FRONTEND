@@ -90,7 +90,7 @@ export default function AdminVerificationsPage() {
             <h1 className="text-3xl font-bold tracking-tight">Identity Verifications</h1>
             <p className="text-muted-foreground mt-1">Review PAN/VAT verification requests from users.</p>
           </div>
-          <div className="w-[180px]">
+          <div className="w-45">
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by Status" />
