@@ -4,8 +4,10 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Clock, Briefcase, MapPin, CheckCircle2, IndianRupee } from "lucide-react";
+import { Clock, Briefcase, MapPin, CheckCircle2, IndianRupee, Save } from "lucide-react";
 import Link from "next/link";
+import { API_BASE_URL } from "@/src/helpers/config";
+import { mutationFetcher } from "@/src/helpers/fetcher";
 
 interface ProjectCardProps {
   project: {
@@ -28,7 +30,8 @@ interface ProjectCardProps {
     };
     _count: {
       applications: number;
-    }
+    };
+    isBookmarked?: boolean;
   };
 }
 
@@ -43,14 +46,49 @@ export function ProjectCard({ project }: ProjectCardProps) {
     return `${Math.floor(hours / 24)}d ago`;
   };
 
+  const [isBookmarked, setIsBookmarked] = React.useState(project.isBookmarked || false);
+  const [isToggling, setIsToggling] = React.useState(false);
+
+  const toggleBookmark = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsToggling(true);
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/bookmarks/projects/${project.id}/toggle`, {
+        arg: {}
+      });
+      if (response.success) {
+        setIsBookmarked(response.data.bookmarked);
+      }
+    } catch (error) {
+      // Quietly fail or toast
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 border-none shadow-md bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col h-full">
+    <Card className="group hover:shadow-xl transition-all duration-300 border-none shadow-md bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col h-full relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`absolute top-4 right-4 z-10 rounded-full h-10 w-10 transition-all ${
+          isBookmarked 
+            ? "bg-primary/20 text-primary hover:bg-primary/30" 
+            : "bg-background/20 backdrop-blur-md text-white hover:bg-background/40"
+        }`}
+        onClick={toggleBookmark}
+        disabled={isToggling}
+      >
+        <Save size={18} className={isBookmarked ? "fill-current" : ""} />
+      </Button>
+
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start gap-4">
           <Badge variant="secondary" className="bg-secondary/10 text-secondary-foreground border-secondary/20 uppercase text-[10px] font-bold tracking-wider">
             {project.category}
           </Badge>
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <span className="text-xs text-muted-foreground mr-10 flex items-center gap-1">
             <Clock size={12} /> {timeAgo(project.createdAt)}
           </span>
         </div>

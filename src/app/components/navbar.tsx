@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, LogOut, User as UserIcon, LayoutDashboard, PlusCircle, Briefcase, Search, ShieldCheck } from "lucide-react";
+import { Menu, X, LogOut, User as UserIcon, LayoutDashboard, PlusCircle, Briefcase, Search, ShieldCheck, Bookmark } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
@@ -83,6 +83,9 @@ export function Navbar() {
           </Link>
           <Link href="/dashboard/applications" className="hover:text-secondary-foreground flex items-center gap-1">
             <Briefcase size={16} /> My Applications
+          </Link>
+          <Link href="/dashboard/saved-projects" className="hover:text-secondary-foreground flex items-center gap-1">
+            <Bookmark className="mr-1 h-4 w-4" /> Saved
           </Link>
         </>
       );
