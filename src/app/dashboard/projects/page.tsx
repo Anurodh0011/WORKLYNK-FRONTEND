@@ -145,9 +145,11 @@ export default function ClientProjectsPage() {
                               <Eye size={16} /> View Details
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                            <Edit3 size={16} /> Edit Project
-                          </DropdownMenuItem>
+                          {project._count.applications === 0 && (
+                            <DropdownMenuItem className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                              <Edit3 size={16} /> Edit Project
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

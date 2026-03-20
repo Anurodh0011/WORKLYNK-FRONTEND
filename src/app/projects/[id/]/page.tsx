@@ -233,6 +233,7 @@ export default function ProjectDetailsPage() {
                       </DialogHeader>
                       <ProjectApplyForm 
                         projectId={project.id} 
+                        checklist={project.checklist || []}
                         onSuccess={() => {
                           setIsApplyOpen(false);
                           mutate();
