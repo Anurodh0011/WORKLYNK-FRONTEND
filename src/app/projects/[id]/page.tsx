@@ -319,8 +319,11 @@ export default function ProjectDetailsPage() {
                         Post Similar Project
                     </Button>
                 ) : (
-                  <Button className="w-full h-14 text-lg font-bold rounded-2xl" onClick={() => router.push("/auth/login")}>
-                    Login to Apply
+                  <Button 
+                    className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20" 
+                    onClick={() => router.push("/auth/login")}
+                  >
+                    Apply Now
                   </Button>
                 )}
                 
