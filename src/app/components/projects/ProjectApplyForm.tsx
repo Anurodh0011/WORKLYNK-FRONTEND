@@ -5,20 +5,26 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
-import { 
-  IndianRupee, 
-  Clock, 
-  Send, 
-  Paperclip, 
-  X, 
-  AlertCircle, 
-  CheckCircle2, 
-  ChevronRight, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../ui/card";
+import {
+  IndianRupee,
+  Clock,
+  Send,
+  Paperclip,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
   ChevronLeft,
   Heart,
   UserCircle,
-  Save
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
@@ -34,10 +40,18 @@ interface ProjectApplyFormProps {
   onCancel?: () => void;
 }
 
-export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCancel }: ProjectApplyFormProps) {
-  const { data: profileData, isLoading: isProfileLoading } = useSWR(`${API_BASE_URL}/freelancer/profile`, baseFetcher);
+export function ProjectApplyForm({
+  projectId,
+  checklist = [],
+  onSuccess,
+  onCancel,
+}: ProjectApplyFormProps) {
+  const { data: profileData, isLoading: isProfileLoading } = useSWR(
+    `${API_BASE_URL}/freelancer/profile`,
+    baseFetcher,
+  );
   const profile = profileData?.data?.user?.profile;
-  
+
   const isProfileComplete = useMemo(() => {
     return profile?.headline && profile?.skills && profile.skills.length > 0;
   }, [profile]);
@@ -45,7 +59,7 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
   const [currentStep, setCurrentStep] = useState(checklist.length > 0 ? 1 : 2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     bidAmount: "",
     estimatedDays: "",
@@ -58,7 +72,9 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
     return checkedItems.size === checklist.length;
   }, [checkedItems, checklist.length]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -84,7 +100,9 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
 
   const handleSubmit = async (status = "PENDING") => {
     if (!isProfileComplete) {
-      toast.error("Please complete your profile (headline & skills) before applying.");
+      toast.error(
+        "Please complete your profile (headline & skills) before applying.",
+      );
       return;
     }
 
@@ -102,17 +120,24 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
       payload.append("estimatedDays", formData.estimatedDays);
       payload.append("proposal", formData.proposal);
       payload.append("status", status);
-      
+
       files.forEach((file) => {
         payload.append("attachments", file);
       });
 
-      const response = await mutationFetcher(`${API_BASE_URL}/applications/${projectId}/apply`, {
-        arg: payload,
-      });
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/applications/${projectId}/apply`,
+        {
+          arg: payload,
+        },
+      );
 
       if (response.success) {
-        toast.success(status === "DRAFT" ? "Application saved for later!" : "Application submitted successfully!");
+        toast.success(
+          status === "DRAFT"
+            ? "Application saved for later!"
+            : "Application submitted successfully!",
+        );
         if (onSuccess) onSuccess();
       } else {
         toast.error(response.message || "Failed to process application");
@@ -129,7 +154,9 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-muted-foreground font-bold animate-pulse text-xs uppercase tracking-widest">Checking Profile Status</p>
+        <p className="text-muted-foreground font-bold animate-pulse text-xs uppercase tracking-widest">
+          Checking Profile Status
+        </p>
       </div>
     );
   }
@@ -141,16 +168,25 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
           <UserCircle size={48} />
         </div>
         <div>
-          <h2 className="text-2xl font-black tracking-tight mb-2">Profile Incomplete</h2>
+          <h2 className="text-2xl font-black tracking-tight mb-2">
+            Profile Incomplete
+          </h2>
           <p className="text-muted-foreground max-w-xs mx-auto font-medium">
-            You need to add a <span className="text-foreground font-bold underline">headline</span> and <span className="text-foreground font-bold underline">skills</span> to your profile before you can apply for projects.
+            You need to complete your profile before you can apply for projects.
           </p>
         </div>
         <div className="pt-4">
-          <Button asChild className="h-12 w-full rounded-xl font-bold text-lg shadow-xl shadow-primary/20">
-            <Link href="/dashboard/profile">Complete My Profile</Link>
+          <Button
+            asChild
+            className="h-12 w-full rounded-xl font-bold text-lg shadow-xl shadow-primary/20"
+          >
+            <Link href="/profile">Complete My Profile</Link>
           </Button>
-          <Button variant="ghost" className="mt-4 w-full rounded-xl font-bold" onClick={onCancel}>
+          <Button
+            variant="ghost"
+            className="mt-4 w-full rounded-xl font-bold"
+            onClick={onCancel}
+          >
             Maybe Later
           </Button>
         </div>
@@ -162,27 +198,31 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10">
         <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-           <CheckCircle2 className="text-primary" size={20} />
-           Qualification Checklist
+          <CheckCircle2 className="text-primary" size={20} />
+          Qualification Checklist
         </h3>
         <p className="text-sm text-muted-foreground mb-6">
-           The client has specified the following requirements. Please confirm that you meet all of them to proceed.
+          The client has specified the following requirements. Please confirm
+          that you meet all of them to proceed.
         </p>
-        
+
         <div className="space-y-4">
           {checklist.map((item, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${checkedItems.has(idx) ? "bg-primary/10 border-primary/30 shadow-sm" : "bg-card hover:border-primary/20"}`}
               onClick={() => toggleCheckItem(idx)}
             >
-              <Checkbox 
-                id={`check-${idx}`} 
+              <Checkbox
+                id={`check-${idx}`}
                 checked={checkedItems.has(idx)}
                 onCheckedChange={() => toggleCheckItem(idx)}
                 className="mt-1"
               />
-              <Label htmlFor={`check-${idx}`} className="text-sm font-medium leading-relaxed cursor-pointer flex-1">
+              <Label
+                htmlFor={`check-${idx}`}
+                className="text-sm font-medium leading-relaxed cursor-pointer flex-1"
+              >
                 {item}
               </Label>
             </div>
@@ -191,27 +231,42 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
       </div>
 
       <div className="flex gap-4">
-        <Button 
+        <Button
           className="flex-1 h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20 group"
           disabled={!isChecklistComplete}
           onClick={() => setCurrentStep(2)}
         >
-          I Meet All Requirements <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+          I Meet All Requirements{" "}
+          <ChevronRight
+            className="ml-2 group-hover:translate-x-1 transition-transform"
+            size={18}
+          />
         </Button>
       </div>
     </div>
   );
 
   const renderDetailsStep = () => (
-    <form onSubmit={(e) => { e.preventDefault(); handleSubmit("PENDING"); }} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit("PENDING");
+      }}
+      className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="bidAmount" className="flex items-center gap-2 font-bold">
+          <Label
+            htmlFor="bidAmount"
+            className="flex items-center gap-2 font-bold"
+          >
             <IndianRupee size={16} className="text-primary" />
             Your Bid Amount
           </Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">रू</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">
+              रू
+            </span>
             <Input
               id="bidAmount"
               name="bidAmount"
@@ -226,7 +281,10 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="estimatedDays" className="flex items-center gap-2 font-bold">
+          <Label
+            htmlFor="estimatedDays"
+            className="flex items-center gap-2 font-bold"
+          >
             <Clock size={16} className="text-primary" />
             Estimated Days
           </Label>
@@ -244,7 +302,9 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="proposal" className="font-bold">Cover Letter / Proposal</Label>
+        <Label htmlFor="proposal" className="font-bold">
+          Cover Letter / Proposal
+        </Label>
         <Textarea
           id="proposal"
           name="proposal"
@@ -256,7 +316,13 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
         />
         <div className="flex justify-between items-center text-[10px] font-bold">
           <p className="text-muted-foreground">Min 50 characters</p>
-          <p className={formData.proposal.length < 50 ? "text-orange-500" : "text-green-500"}>
+          <p
+            className={
+              formData.proposal.length < 50
+                ? "text-orange-500"
+                : "text-green-500"
+            }
+          >
             {formData.proposal.length} characters
           </p>
         </div>
@@ -277,14 +343,19 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
               <Paperclip className="text-primary" size={20} />
             </div>
             <p className="text-sm font-bold">Add supporting documents</p>
-            <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-bold">MAX 5 FILES • 10MB EACH</p>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-bold">
+              MAX 5 FILES • 10MB EACH
+            </p>
           </div>
         </div>
 
         {files.length > 0 && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {files.map((file, index) => (
-              <div key={index} className="flex items-center justify-between bg-card p-2 rounded-lg border shadow-sm animate-in zoom-in-95 duration-200">
+              <div
+                key={index}
+                className="flex items-center justify-between bg-card p-2 rounded-lg border shadow-sm animate-in zoom-in-95 duration-200"
+              >
                 <span className="text-[10px] truncate font-bold flex items-center gap-2">
                   <Paperclip size={12} className="text-primary" /> {file.name}
                 </span>
@@ -303,32 +374,43 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
 
       <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
         <div className="flex gap-2 order-2 sm:order-1">
-           {checklist.length > 0 && (
-             <Button type="button" variant="ghost" onClick={() => setCurrentStep(1)} className="rounded-xl">
-               <ChevronLeft size={18} /> Back
-             </Button>
-           )}
-           <Button 
-             type="button" 
-             variant="ghost" 
-             className="gap-2 text-muted-foreground hover:text-primary rounded-xl"
-             onClick={() => handleSubmit("DRAFT")}
-             disabled={isSavingDraft || isSubmitting}
-           >
-             {isSavingDraft ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> : <Save size={18} />}
-             Save Draft
-           </Button>
+          {checklist.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setCurrentStep(1)}
+              className="rounded-xl"
+            >
+              <ChevronLeft size={18} /> Back
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            className="gap-2 text-muted-foreground hover:text-primary rounded-xl"
+            onClick={() => handleSubmit("DRAFT")}
+            disabled={isSavingDraft || isSubmitting}
+          >
+            {isSavingDraft ? (
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Save size={18} />
+            )}
+            Save Draft
+          </Button>
         </div>
-        
+
         <div className="flex-1 order-1 sm:order-2" />
 
         <Button
           type="submit"
           className="flex-1 sm:flex-none sm:px-10 h-12 text-lg font-bold shadow-xl shadow-primary/20 rounded-xl order-1 sm:order-3"
-          disabled={isSubmitting || isSavingDraft || formData.proposal.length < 50}
+          disabled={
+            isSubmitting || isSavingDraft || formData.proposal.length < 50
+          }
         >
           {isSubmitting ? (
-             <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <span className="flex items-center gap-2">
               <Send size={18} /> Submit Proposal
@@ -343,15 +425,21 @@ export function ProjectApplyForm({ projectId, checklist = [], onSuccess, onCance
     <Card className="border-none shadow-none bg-transparent">
       <CardHeader className="px-0 pt-0">
         <div className="flex items-center justify-between mb-2">
-           <CardTitle className="text-3xl font-extrabold tracking-tight">Apply for Project</CardTitle>
-           <div className="flex items-center gap-1.5">
-             <div className={`w-2.5 h-2.5 rounded-full ${currentStep === 1 ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-muted"}`}></div>
-             <div className={`w-2.5 h-2.5 rounded-full ${currentStep === 2 ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-muted"}`}></div>
-           </div>
+          <CardTitle className="text-3xl font-extrabold tracking-tight">
+            Apply for Project
+          </CardTitle>
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${currentStep === 1 ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-muted"}`}
+            ></div>
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${currentStep === 2 ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-muted"}`}
+            ></div>
+          </div>
         </div>
         <CardDescription className="text-base font-medium">
-          {currentStep === 1 
-            ? "Confirm your qualifications before proceeding." 
+          {currentStep === 1
+            ? "Confirm your qualifications before proceeding."
             : "Set your bid and explain why you're perfect for this task."}
         </CardDescription>
       </CardHeader>

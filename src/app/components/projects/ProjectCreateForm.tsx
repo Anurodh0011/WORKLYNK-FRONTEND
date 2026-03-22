@@ -7,9 +7,23 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/app/components/ui/select";
 import { Badge } from "@/src/app/components/ui/badge";
-import { X, Plus, Upload, Save, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  Upload,
+  Save,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { mutationFetcher } from "@/src/helpers/fetcher";
@@ -79,7 +93,9 @@ export default function ProjectCreateForm() {
   const [files, setFiles] = useState<File[]>([]);
 
   // Handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -89,7 +105,10 @@ export default function ProjectCreateForm() {
   };
 
   const addSkill = () => {
-    if (skillInput.trim() && !formData.skillsRequired.includes(skillInput.trim())) {
+    if (
+      skillInput.trim() &&
+      !formData.skillsRequired.includes(skillInput.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         skillsRequired: [...prev.skillsRequired, skillInput.trim()],
@@ -106,7 +125,10 @@ export default function ProjectCreateForm() {
   };
 
   const addChecklistItem = () => {
-    if (checklistItemInput.trim() && !formData.checklist.includes(checklistItemInput.trim())) {
+    if (
+      checklistItemInput.trim() &&
+      !formData.checklist.includes(checklistItemInput.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         checklist: [...prev.checklist, checklistItemInput.trim()],
@@ -132,7 +154,8 @@ export default function ProjectCreateForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+  const nextStep = () =>
+    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleSubmit = async (status = "OPEN") => {
@@ -141,7 +164,7 @@ export default function ProjectCreateForm() {
 
     try {
       const payload = new FormData();
-      
+
       // Append all form fields
       Object.keys(formData).forEach((key) => {
         if (Array.isArray(formData[key])) {
@@ -159,8 +182,10 @@ export default function ProjectCreateForm() {
         payload.append("attachments", file);
       });
 
-      const response = await mutationFetcher(`${API_BASE_URL}/projects`, { arg: payload });
-      
+      const response = await mutationFetcher(`${API_BASE_URL}/projects`, {
+        arg: payload,
+      });
+
       if (response.success) {
         toast.success(response.message);
         router.push("/dashboard");
@@ -168,7 +193,9 @@ export default function ProjectCreateForm() {
         toast.error(response.message);
       }
     } catch (error: any) {
-      toast.error(error.message || "Something went wrong while posting project.");
+      toast.error(
+        error.message || "Something went wrong while posting project.",
+      );
     } finally {
       setIsSubmitting(false);
       setIsSavingDraft(false);
@@ -188,7 +215,9 @@ export default function ProjectCreateForm() {
           onChange={handleInputChange}
           className="text-lg py-6"
         />
-        <p className="text-sm text-muted-foreground">Catchy titles attract better freelancers.</p>
+        <p className="text-sm text-muted-foreground">
+          Catchy titles attract better freelancers.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -233,15 +262,26 @@ export default function ProjectCreateForm() {
             placeholder="e.g. React, Node.js, UI Design"
             value={skillInput}
             onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
+            onKeyDown={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addSkill())
+            }
           />
-          <Button type="button" onClick={addSkill} size="icon" variant="secondary">
+          <Button
+            type="button"
+            onClick={addSkill}
+            size="icon"
+            variant="secondary"
+          >
             <Plus size={18} />
           </Button>
         </div>
         <div className="flex flex-wrap gap-2 min-h-[40px]">
           {formData.skillsRequired.map((skill) => (
-            <Badge key={skill} variant="default" className="pl-3 pr-1 py-1 gap-1">
+            <Badge
+              key={skill}
+              variant="default"
+              className="pl-3 pr-1 py-1 gap-1"
+            >
               {skill}
               <button
                 type="button"
@@ -253,7 +293,9 @@ export default function ProjectCreateForm() {
             </Badge>
           ))}
           {formData.skillsRequired.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">Add at least one skill</p>
+            <p className="text-sm text-muted-foreground italic">
+              Add at least one skill
+            </p>
           )}
         </div>
       </div>
@@ -262,7 +304,9 @@ export default function ProjectCreateForm() {
         <div className="space-y-2">
           <Label>Experience Level</Label>
           <Select
-            onValueChange={(value) => handleSelectChange("experienceLevel", value)}
+            onValueChange={(value) =>
+              handleSelectChange("experienceLevel", value)
+            }
             defaultValue={formData.experienceLevel}
           >
             <SelectTrigger className="w-full">
@@ -303,7 +347,10 @@ export default function ProjectCreateForm() {
             className="flex-1 py-10 text-lg flex-col gap-2"
             onClick={() => handleSelectChange("budgetType", "FIXED")}
           >
-            <CheckCircle2 size={24} className={formData.budgetType === "FIXED" ? "block" : "hidden"} />
+            <CheckCircle2
+              size={24}
+              className={formData.budgetType === "FIXED" ? "block" : "hidden"}
+            />
             Fixed Price
           </Button>
           <Button
@@ -312,7 +359,10 @@ export default function ProjectCreateForm() {
             className="flex-1 py-10 text-lg flex-col gap-2"
             onClick={() => handleSelectChange("budgetType", "HOURLY")}
           >
-            <CheckCircle2 size={24} className={formData.budgetType === "HOURLY" ? "block" : "hidden"} />
+            <CheckCircle2
+              size={24}
+              className={formData.budgetType === "HOURLY" ? "block" : "hidden"}
+            />
             Hourly Rate
           </Button>
         </div>
@@ -354,23 +404,39 @@ export default function ProjectCreateForm() {
             placeholder="e.g. Must have 5+ years of experience"
             value={checklistItemInput}
             onChange={(e) => setChecklistItemInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addChecklistItem())}
+            onKeyDown={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addChecklistItem())
+            }
           />
-          <Button type="button" onClick={addChecklistItem} size="icon" variant="secondary">
+          <Button
+            type="button"
+            onClick={addChecklistItem}
+            size="icon"
+            variant="secondary"
+          >
             <Plus size={18} />
           </Button>
         </div>
         <div className="space-y-2">
           {formData.checklist.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+            <div
+              key={idx}
+              className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
+            >
               <span className="text-sm">{item}</span>
-              <button type="button" onClick={() => removeChecklistItem(item)} className="text-destructive hover:scale-110 transition-transform">
+              <button
+                type="button"
+                onClick={() => removeChecklistItem(item)}
+                className="text-destructive hover:scale-110 transition-transform"
+              >
                 <X size={16} />
               </button>
             </div>
           ))}
           {formData.checklist.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">List any specific requirements or checks.</p>
+            <p className="text-sm text-muted-foreground italic">
+              List any specific requirements or checks.
+            </p>
           )}
         </div>
       </div>
@@ -385,21 +451,39 @@ export default function ProjectCreateForm() {
             id="file-upload"
             onChange={handleFileChange}
           />
-          <label htmlFor="file-upload" className="cursor-pointer space-y-2 block">
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer space-y-2 block"
+          >
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary group-hover:scale-110 transition-transform">
               <Upload size={24} />
             </div>
-            <div className="text-sm font-medium">Click to upload or drag and drop</div>
-            <div className="text-xs text-muted-foreground">Any file up to 10MB</div>
+            <div className="text-sm font-medium">
+              Click to upload or drag and drop
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Any file up to 10MB
+            </div>
           </label>
         </div>
-        
+
         {files.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
             {files.map((file, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border">
-                <span className="text-xs font-medium truncate max-w-[200px]">{file.name}</span>
-                <Button type="button" onClick={() => removeFile(idx)} size="icon" variant="ghost" className="h-8 w-8 hover:text-destructive">
+              <div
+                key={idx}
+                className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border"
+              >
+                <span className="text-xs font-medium truncate max-w-[200px]">
+                  {file.name}
+                </span>
+                <Button
+                  type="button"
+                  onClick={() => removeFile(idx)}
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:text-destructive"
+                >
                   <X size={14} />
                 </Button>
               </div>
@@ -427,7 +511,9 @@ export default function ProjectCreateForm() {
               {currentStep > step.id ? <CheckCircle2 size={20} /> : step.id}
             </div>
             <div className="text-center">
-              <div className={`text-xs font-bold leading-none ${currentStep >= step.id ? "text-primary" : "text-muted-foreground"}`}>
+              <div
+                className={`text-xs font-bold leading-none ${currentStep >= step.id ? "text-primary" : "text-muted-foreground"}`}
+              >
                 {step.title}
               </div>
             </div>
@@ -451,10 +537,14 @@ export default function ProjectCreateForm() {
           disabled={isSavingDraft || isSubmitting}
           className="gap-2 order-2 sm:order-1"
         >
-          {isSavingDraft ? <span className="animate-spin mr-2">⟳</span> : <Save size={18} />}
+          {isSavingDraft ? (
+            <span className="animate-spin mr-2">⟳</span>
+          ) : (
+            <Save size={18} />
+          )}
           Save as Draft
         </Button>
-        
+
         <div className="flex-1 sm:order-2" />
 
         <div className="flex gap-4 sm:order-3">
