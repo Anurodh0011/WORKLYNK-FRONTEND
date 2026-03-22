@@ -67,11 +67,12 @@ interface ProjectFormData {
   [key: string]: any; // Index signature for easier mapping
 }
 
-export default function ProjectCreateForm() {
+export default function ProjectCreateForm({ projectId }: { projectId?: string }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isFetchingProject, setIsFetchingProject] = useState(!!projectId);
 
   // Form State
   const [formData, setFormData] = useState<ProjectFormData>({
@@ -91,6 +92,44 @@ export default function ProjectCreateForm() {
   const [skillInput, setSkillInput] = useState("");
   const [checklistItemInput, setChecklistItemInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+
+  // Fetch project data if editing
+  React.useEffect(() => {
+    if (projectId) {
+      const fetchProject = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+            credentials: "include"
+          });
+          const data = await response.json();
+          if (data.success) {
+            const p = data.data;
+            setFormData({
+              title: p.title || "",
+              category: p.category || "",
+              description: p.description || "",
+              skillsRequired: p.skillsRequired || [],
+              experienceLevel: p.experienceLevel || "INTERMEDIATE",
+              duration: p.duration || "",
+              budgetType: p.budgetType || "FIXED",
+              budgetMin: p.budgetMin ? String(p.budgetMin) : "",
+              budgetMax: p.budgetMax ? String(p.budgetMax) : "",
+              checklist: p.checklist || [],
+              status: p.status || "DRAFT",
+            });
+            setExistingAttachments(p.attachments || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch project:", error);
+          toast.error("Failed to load project data");
+        } finally {
+          setIsFetchingProject(false);
+        }
+      };
+      fetchProject();
+    }
+  }, [projectId]);
 
   // Handlers
   const handleInputChange = (
@@ -154,11 +193,67 @@ export default function ProjectCreateForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const nextStep = () =>
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        if (!formData.title || formData.title.length < 5) {
+          toast.error("Title must be at least 5 characters long");
+          return false;
+        }
+        if (!formData.category) {
+          toast.error("Please select a category");
+          return false;
+        }
+        if (!formData.description || formData.description.length < 20) {
+          toast.error("Description must be at least 20 characters long");
+          return false;
+        }
+        return true;
+      case 2:
+        if (formData.skillsRequired.length === 0) {
+          toast.error("Please add at least one skill");
+          return false;
+        }
+        return true;
+      case 3:
+        if (!formData.budgetMin || isNaN(Number(formData.budgetMin))) {
+          toast.error("Please enter a valid minimum budget");
+          return false;
+        }
+        if (formData.budgetType === "FIXED") {
+          if (!formData.budgetMax || isNaN(Number(formData.budgetMax))) {
+            toast.error("Please enter a valid maximum budget");
+            return false;
+          }
+          if (Number(formData.budgetMax) < Number(formData.budgetMin)) {
+            toast.error("Maximum budget cannot be less than minimum budget");
+            return false;
+          }
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    }
+  };
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleSubmit = async (status = "OPEN") => {
+    if (status === "OPEN") {
+      // Validate all steps before posting
+      for (let i = 1; i <= STEPS.length; i++) {
+        if (!validateStep(i)) {
+          setCurrentStep(i);
+          return;
+        }
+      }
+    }
+
     setIsSubmitting(status === "OPEN");
     setIsSavingDraft(status === "DRAFT");
 
@@ -182,13 +277,17 @@ export default function ProjectCreateForm() {
         payload.append("attachments", file);
       });
 
-      const response = await mutationFetcher(`${API_BASE_URL}/projects`, {
+      const url = projectId ? `${API_BASE_URL}/projects/${projectId}` : `${API_BASE_URL}/projects`;
+      const method = projectId ? "PATCH" : "POST";
+
+      const response = await mutationFetcher(url, {
         arg: payload,
-      });
+        method: method
+      } as any);
 
       if (response.success) {
         toast.success(response.message);
-        router.push("/dashboard");
+        router.push("/dashboard/projects");
       } else {
         toast.error(response.message);
       }
@@ -201,6 +300,15 @@ export default function ProjectCreateForm() {
       setIsSavingDraft(false);
     }
   };
+
+  if (isFetchingProject) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground font-medium italic animate-pulse">Resuming your draft...</p>
+      </div>
+    );
+  }
 
   // Step Components
   const renderStepBasics = () => (
@@ -467,27 +575,49 @@ export default function ProjectCreateForm() {
           </label>
         </div>
 
-        {files.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-            {files.map((file, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border"
-              >
-                <span className="text-xs font-medium truncate max-w-[200px]">
-                  {file.name}
-                </span>
-                <Button
-                  type="button"
-                  onClick={() => removeFile(idx)}
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 hover:text-destructive"
+        {existingAttachments.length > 0 && (
+          <div className="space-y-3 mt-6">
+            <Label className="text-xs uppercase tracking-wider opacity-70">Existing Attachments</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {existingAttachments.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 pl-4 bg-primary/5 rounded-lg border border-primary/10"
                 >
-                  <X size={14} />
-                </Button>
-              </div>
-            ))}
+                  <span className="text-xs font-bold truncate max-w-[200px]">
+                    {file.name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] py-0">Saved</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {files.length > 0 && (
+          <div className="space-y-3 mt-6">
+            <Label className="text-xs uppercase tracking-wider opacity-70">New Attachments</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {files.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border"
+                >
+                  <span className="text-xs font-medium truncate max-w-[200px]">
+                    {file.name}
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={() => removeFile(idx)}
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 hover:text-destructive"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

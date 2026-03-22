@@ -26,7 +26,7 @@ export const baseFetcher = async (url) => {
  * @param {string} url 
  * @param {{ arg: any }} options
  */
-export const mutationFetcher = async (url, { arg }) => {
+export const mutationFetcher = async (url, { arg, method = "POST" }) => {
   const headers = {};
   let body = arg;
 
@@ -37,7 +37,7 @@ export const mutationFetcher = async (url, { arg }) => {
   }
 
   const response = await fetch(url, {
-    method: "POST",
+    method: method,
     headers,
     body,
     credentials: "include",
