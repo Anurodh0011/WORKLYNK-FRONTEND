@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   ExternalLink,
   ChevronRight,
-  Heart
+  Heart,
+  ShieldAlert
 } from "lucide-react";
 import { Button } from "@/src/app/components/ui/button";
 import { Badge } from "@/src/app/components/ui/badge";
@@ -40,6 +41,7 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const { user }: any = useAuthContext();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
+  const [isVerifyDialogOpen, setIsVerifyDialogOpen] = useState(false);
 
   const { data, error, isLoading, mutate } = useSWR(
     `${API_BASE_URL}/projects/${id}`,
@@ -75,6 +77,20 @@ export default function ProjectDetailsPage() {
       toast.error("Failed to update bookmark.");
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const handleApplyClick = () => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+    
+    const verificationStatus = user.profile?.verificationStatus || "UNVERIFIED";
+    if (verificationStatus !== "VERIFIED") {
+      setIsVerifyDialogOpen(true);
+    } else {
+      setIsApplyOpen(true);
     }
   };
 
@@ -293,34 +309,79 @@ export default function ProjectDetailsPage() {
             <Card className="rounded-3xl border shadow-lg overflow-hidden border-primary/10">
               <CardContent className="p-8 space-y-6">
                 {user?.role === "FREELANCER" ? (
-                  <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20">
-                        Apply Now
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-8">
-                      <DialogHeader>
-                        <DialogTitle className="sr-only">Apply for Project</DialogTitle>
-                      </DialogHeader>
-                      <ProjectApplyForm 
-                        projectId={project.id} 
-                        checklist={project.checklist || []}
-                        onSuccess={() => {
-                          setIsApplyOpen(false);
-                          mutate();
-                        }}
-                        onCancel={() => setIsApplyOpen(false)}
-                      />
-                    </DialogContent>
-                  </Dialog>
+                  <>
+                    <Button 
+                      className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20"
+                      onClick={handleApplyClick}
+                      disabled={!!project.myApplication}
+                      variant={project.myApplication ? "outline" : "default"}
+                    >
+                      {project.myApplication ? (
+                         <span className="flex items-center gap-2">
+                           <CheckCircle2 size={20} className="text-green-500" /> Applied
+                         </span>
+                      ) : (
+                        "Apply Now"
+                      )}
+                    </Button>
+
+                    {/* Application Form Dialog */}
+                    <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-10 border-none shadow-2xl">
+                        <ProjectApplyForm 
+                          projectId={project.id} 
+                          checklist={project.checklist || []}
+                          onSuccess={() => {
+                            setIsApplyOpen(false);
+                            mutate();
+                          }}
+                          onCancel={() => setIsApplyOpen(false)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Verification Required Dialog */}
+                    <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
+                      <DialogContent className="max-w-md rounded-3xl p-8">
+                        <DialogHeader>
+                          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 mx-auto border border-red-100 shadow-sm shadow-red-500/10">
+                             <ShieldAlert size={32} />
+                          </div>
+                          <DialogTitle className="text-2xl font-bold text-center">Verification Required</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-center space-y-4 pt-4">
+                          <p className="text-muted-foreground leading-relaxed">
+                            To ensure a safe and trustworthy environment, we require freelancers to verify their identity with a <strong>PAN or VAT</strong> document before applying for projects.
+                          </p>
+                          <div className="flex flex-col gap-3 pt-4">
+                             <Button 
+                               className="w-full h-12 rounded-xl font-bold"
+                               onClick={() => router.push("/profile")}
+                             >
+                               Verify Now
+                             </Button>
+                             <Button 
+                               variant="ghost" 
+                               className="w-full h-12 rounded-xl font-medium"
+                               onClick={() => setIsVerifyDialogOpen(false)}
+                             >
+                               Maybe Later
+                             </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 ) : user?.role === "CLIENT" ? (
                     <Button variant="outline" className="w-full h-14 text-lg font-bold rounded-2xl border-dashed" disabled>
                         Post Similar Project
                     </Button>
                 ) : (
-                  <Button className="w-full h-14 text-lg font-bold rounded-2xl" onClick={() => router.push("/auth/login")}>
-                    Login to Apply
+                  <Button 
+                    className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20" 
+                    onClick={() => router.push("/auth/login")}
+                  >
+                    Apply Now
                   </Button>
                 )}
                 

@@ -127,11 +127,19 @@ export default function ClientProjectsPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
-                        <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
-                          Review Proposals <ChevronRight size={16} />
-                        </Button>
-                      </Link>
+                      {project.status === "DRAFT" ? (
+                        <Link href={`/projects/new?id=${project.id}`} className="flex-1 md:flex-none">
+                          <Button className="w-full gap-2 rounded-xl shadow-lg shadow-primary/20">
+                            Resume Creation <ChevronRight size={16} />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
+                          <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                            Review Proposals <ChevronRight size={16} />
+                          </Button>
+                        </Link>
+                      )}
                       
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -146,8 +154,10 @@ export default function ClientProjectsPage() {
                             </Link>
                           </DropdownMenuItem>
                           {project._count.applications === 0 && (
-                            <DropdownMenuItem className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                              <Edit3 size={16} /> Edit Project
+                            <DropdownMenuItem asChild>
+                              <Link href={`/projects/new?id=${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                <Edit3 size={16} /> {project.status === "DRAFT" ? "Continue Editing" : "Edit Project"}
+                              </Link>
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

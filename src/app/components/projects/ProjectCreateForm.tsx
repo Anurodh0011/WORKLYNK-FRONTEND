@@ -7,9 +7,23 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/app/components/ui/select";
 import { Badge } from "@/src/app/components/ui/badge";
-import { X, Plus, Upload, Save, ChevronRight, ChevronLeft, CheckCircle2 } from "lucide-react";
+import {
+  X,
+  Plus,
+  Upload,
+  Save,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { mutationFetcher } from "@/src/helpers/fetcher";
@@ -53,11 +67,12 @@ interface ProjectFormData {
   [key: string]: any; // Index signature for easier mapping
 }
 
-export default function ProjectCreateForm() {
+export default function ProjectCreateForm({ projectId }: { projectId?: string }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isFetchingProject, setIsFetchingProject] = useState(!!projectId);
 
   // Form State
   const [formData, setFormData] = useState<ProjectFormData>({
@@ -77,9 +92,49 @@ export default function ProjectCreateForm() {
   const [skillInput, setSkillInput] = useState("");
   const [checklistItemInput, setChecklistItemInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+
+  // Fetch project data if editing
+  React.useEffect(() => {
+    if (projectId) {
+      const fetchProject = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+            credentials: "include"
+          });
+          const data = await response.json();
+          if (data.success) {
+            const p = data.data;
+            setFormData({
+              title: p.title || "",
+              category: p.category || "",
+              description: p.description || "",
+              skillsRequired: p.skillsRequired || [],
+              experienceLevel: p.experienceLevel || "INTERMEDIATE",
+              duration: p.duration || "",
+              budgetType: p.budgetType || "FIXED",
+              budgetMin: p.budgetMin ? String(p.budgetMin) : "",
+              budgetMax: p.budgetMax ? String(p.budgetMax) : "",
+              checklist: p.checklist || [],
+              status: p.status || "DRAFT",
+            });
+            setExistingAttachments(p.attachments || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch project:", error);
+          toast.error("Failed to load project data");
+        } finally {
+          setIsFetchingProject(false);
+        }
+      };
+      fetchProject();
+    }
+  }, [projectId]);
 
   // Handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -89,7 +144,10 @@ export default function ProjectCreateForm() {
   };
 
   const addSkill = () => {
-    if (skillInput.trim() && !formData.skillsRequired.includes(skillInput.trim())) {
+    if (
+      skillInput.trim() &&
+      !formData.skillsRequired.includes(skillInput.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         skillsRequired: [...prev.skillsRequired, skillInput.trim()],
@@ -106,7 +164,10 @@ export default function ProjectCreateForm() {
   };
 
   const addChecklistItem = () => {
-    if (checklistItemInput.trim() && !formData.checklist.includes(checklistItemInput.trim())) {
+    if (
+      checklistItemInput.trim() &&
+      !formData.checklist.includes(checklistItemInput.trim())
+    ) {
       setFormData((prev) => ({
         ...prev,
         checklist: [...prev.checklist, checklistItemInput.trim()],
@@ -132,16 +193,73 @@ export default function ProjectCreateForm() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        if (!formData.title || formData.title.length < 5) {
+          toast.error("Title must be at least 5 characters long");
+          return false;
+        }
+        if (!formData.category) {
+          toast.error("Please select a category");
+          return false;
+        }
+        if (!formData.description || formData.description.length < 20) {
+          toast.error("Description must be at least 20 characters long");
+          return false;
+        }
+        return true;
+      case 2:
+        if (formData.skillsRequired.length === 0) {
+          toast.error("Please add at least one skill");
+          return false;
+        }
+        return true;
+      case 3:
+        if (!formData.budgetMin || isNaN(Number(formData.budgetMin))) {
+          toast.error("Please enter a valid minimum budget");
+          return false;
+        }
+        if (formData.budgetType === "FIXED") {
+          if (!formData.budgetMax || isNaN(Number(formData.budgetMax))) {
+            toast.error("Please enter a valid maximum budget");
+            return false;
+          }
+          if (Number(formData.budgetMax) < Number(formData.budgetMin)) {
+            toast.error("Maximum budget cannot be less than minimum budget");
+            return false;
+          }
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    }
+  };
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleSubmit = async (status = "OPEN") => {
+    if (status === "OPEN") {
+      // Validate all steps before posting
+      for (let i = 1; i <= STEPS.length; i++) {
+        if (!validateStep(i)) {
+          setCurrentStep(i);
+          return;
+        }
+      }
+    }
+
     setIsSubmitting(status === "OPEN");
     setIsSavingDraft(status === "DRAFT");
 
     try {
       const payload = new FormData();
-      
+
       // Append all form fields
       Object.keys(formData).forEach((key) => {
         if (Array.isArray(formData[key])) {
@@ -159,21 +277,38 @@ export default function ProjectCreateForm() {
         payload.append("attachments", file);
       });
 
-      const response = await mutationFetcher(`${API_BASE_URL}/projects`, { arg: payload });
-      
+      const url = projectId ? `${API_BASE_URL}/projects/${projectId}` : `${API_BASE_URL}/projects`;
+      const method = projectId ? "PATCH" : "POST";
+
+      const response = await mutationFetcher(url, {
+        arg: payload,
+        method: method
+      } as any);
+
       if (response.success) {
         toast.success(response.message);
-        router.push("/dashboard");
+        router.push("/dashboard/projects");
       } else {
         toast.error(response.message);
       }
     } catch (error: any) {
-      toast.error(error.message || "Something went wrong while posting project.");
+      toast.error(
+        error.message || "Something went wrong while posting project.",
+      );
     } finally {
       setIsSubmitting(false);
       setIsSavingDraft(false);
     }
   };
+
+  if (isFetchingProject) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground font-medium italic animate-pulse">Resuming your draft...</p>
+      </div>
+    );
+  }
 
   // Step Components
   const renderStepBasics = () => (
@@ -188,7 +323,9 @@ export default function ProjectCreateForm() {
           onChange={handleInputChange}
           className="text-lg py-6"
         />
-        <p className="text-sm text-muted-foreground">Catchy titles attract better freelancers.</p>
+        <p className="text-sm text-muted-foreground">
+          Catchy titles attract better freelancers.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -233,15 +370,26 @@ export default function ProjectCreateForm() {
             placeholder="e.g. React, Node.js, UI Design"
             value={skillInput}
             onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
+            onKeyDown={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addSkill())
+            }
           />
-          <Button type="button" onClick={addSkill} size="icon" variant="secondary">
+          <Button
+            type="button"
+            onClick={addSkill}
+            size="icon"
+            variant="secondary"
+          >
             <Plus size={18} />
           </Button>
         </div>
         <div className="flex flex-wrap gap-2 min-h-[40px]">
           {formData.skillsRequired.map((skill) => (
-            <Badge key={skill} variant="default" className="pl-3 pr-1 py-1 gap-1">
+            <Badge
+              key={skill}
+              variant="default"
+              className="pl-3 pr-1 py-1 gap-1"
+            >
               {skill}
               <button
                 type="button"
@@ -253,7 +401,9 @@ export default function ProjectCreateForm() {
             </Badge>
           ))}
           {formData.skillsRequired.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">Add at least one skill</p>
+            <p className="text-sm text-muted-foreground italic">
+              Add at least one skill
+            </p>
           )}
         </div>
       </div>
@@ -262,7 +412,9 @@ export default function ProjectCreateForm() {
         <div className="space-y-2">
           <Label>Experience Level</Label>
           <Select
-            onValueChange={(value) => handleSelectChange("experienceLevel", value)}
+            onValueChange={(value) =>
+              handleSelectChange("experienceLevel", value)
+            }
             defaultValue={formData.experienceLevel}
           >
             <SelectTrigger className="w-full">
@@ -303,7 +455,10 @@ export default function ProjectCreateForm() {
             className="flex-1 py-10 text-lg flex-col gap-2"
             onClick={() => handleSelectChange("budgetType", "FIXED")}
           >
-            <CheckCircle2 size={24} className={formData.budgetType === "FIXED" ? "block" : "hidden"} />
+            <CheckCircle2
+              size={24}
+              className={formData.budgetType === "FIXED" ? "block" : "hidden"}
+            />
             Fixed Price
           </Button>
           <Button
@@ -312,7 +467,10 @@ export default function ProjectCreateForm() {
             className="flex-1 py-10 text-lg flex-col gap-2"
             onClick={() => handleSelectChange("budgetType", "HOURLY")}
           >
-            <CheckCircle2 size={24} className={formData.budgetType === "HOURLY" ? "block" : "hidden"} />
+            <CheckCircle2
+              size={24}
+              className={formData.budgetType === "HOURLY" ? "block" : "hidden"}
+            />
             Hourly Rate
           </Button>
         </div>
@@ -354,23 +512,39 @@ export default function ProjectCreateForm() {
             placeholder="e.g. Must have 5+ years of experience"
             value={checklistItemInput}
             onChange={(e) => setChecklistItemInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addChecklistItem())}
+            onKeyDown={(e) =>
+              e.key === "Enter" && (e.preventDefault(), addChecklistItem())
+            }
           />
-          <Button type="button" onClick={addChecklistItem} size="icon" variant="secondary">
+          <Button
+            type="button"
+            onClick={addChecklistItem}
+            size="icon"
+            variant="secondary"
+          >
             <Plus size={18} />
           </Button>
         </div>
         <div className="space-y-2">
           {formData.checklist.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+            <div
+              key={idx}
+              className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
+            >
               <span className="text-sm">{item}</span>
-              <button type="button" onClick={() => removeChecklistItem(item)} className="text-destructive hover:scale-110 transition-transform">
+              <button
+                type="button"
+                onClick={() => removeChecklistItem(item)}
+                className="text-destructive hover:scale-110 transition-transform"
+              >
                 <X size={16} />
               </button>
             </div>
           ))}
           {formData.checklist.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">List any specific requirements or checks.</p>
+            <p className="text-sm text-muted-foreground italic">
+              List any specific requirements or checks.
+            </p>
           )}
         </div>
       </div>
@@ -385,25 +559,65 @@ export default function ProjectCreateForm() {
             id="file-upload"
             onChange={handleFileChange}
           />
-          <label htmlFor="file-upload" className="cursor-pointer space-y-2 block">
+          <label
+            htmlFor="file-upload"
+            className="cursor-pointer space-y-2 block"
+          >
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary group-hover:scale-110 transition-transform">
               <Upload size={24} />
             </div>
-            <div className="text-sm font-medium">Click to upload or drag and drop</div>
-            <div className="text-xs text-muted-foreground">Any file up to 10MB</div>
+            <div className="text-sm font-medium">
+              Click to upload or drag and drop
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Any file up to 10MB
+            </div>
           </label>
         </div>
-        
+
+        {existingAttachments.length > 0 && (
+          <div className="space-y-3 mt-6">
+            <Label className="text-xs uppercase tracking-wider opacity-70">Existing Attachments</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {existingAttachments.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 pl-4 bg-primary/5 rounded-lg border border-primary/10"
+                >
+                  <span className="text-xs font-bold truncate max-w-[200px]">
+                    {file.name}
+                  </span>
+                  <Badge variant="outline" className="text-[10px] py-0">Saved</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {files.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-            {files.map((file, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border">
-                <span className="text-xs font-medium truncate max-w-[200px]">{file.name}</span>
-                <Button type="button" onClick={() => removeFile(idx)} size="icon" variant="ghost" className="h-8 w-8 hover:text-destructive">
-                  <X size={14} />
-                </Button>
-              </div>
-            ))}
+          <div className="space-y-3 mt-6">
+            <Label className="text-xs uppercase tracking-wider opacity-70">New Attachments</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {files.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 pl-4 bg-muted/50 rounded-lg border"
+                >
+                  <span className="text-xs font-medium truncate max-w-[200px]">
+                    {file.name}
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={() => removeFile(idx)}
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 hover:text-destructive"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -427,7 +641,9 @@ export default function ProjectCreateForm() {
               {currentStep > step.id ? <CheckCircle2 size={20} /> : step.id}
             </div>
             <div className="text-center">
-              <div className={`text-xs font-bold leading-none ${currentStep >= step.id ? "text-primary" : "text-muted-foreground"}`}>
+              <div
+                className={`text-xs font-bold leading-none ${currentStep >= step.id ? "text-primary" : "text-muted-foreground"}`}
+              >
                 {step.title}
               </div>
             </div>
@@ -451,10 +667,14 @@ export default function ProjectCreateForm() {
           disabled={isSavingDraft || isSubmitting}
           className="gap-2 order-2 sm:order-1"
         >
-          {isSavingDraft ? <span className="animate-spin mr-2">⟳</span> : <Save size={18} />}
+          {isSavingDraft ? (
+            <span className="animate-spin mr-2">⟳</span>
+          ) : (
+            <Save size={18} />
+          )}
           Save as Draft
         </Button>
-        
+
         <div className="flex-1 sm:order-2" />
 
         <div className="flex gap-4 sm:order-3">

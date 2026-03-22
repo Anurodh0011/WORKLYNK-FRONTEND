@@ -3,13 +3,15 @@
 import React from "react";
 import BaseLayout from "@/src/app/components/base-layout";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ProjectCreateForm from "@/src/app/components/projects/ProjectCreateForm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/src/app/components/ui/card";
 
 export default function NewProjectPage() {
   const { user, isLoading }: any = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
 
   if (isLoading) {
     return (
@@ -45,7 +47,7 @@ export default function NewProjectPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProjectCreateForm />
+            <ProjectCreateForm projectId={id || undefined} />
           </CardContent>
         </Card>
       </div>
