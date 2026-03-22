@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import BaseLayout from "@/src/app/components/base-layout";
 import useSWR, { mutate } from "swr";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { baseFetcher, mutationFetcher } from "@/src/helpers/fetcher";
 import { 
@@ -38,6 +38,7 @@ import {
 
 export default function ProjectApplicationsPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id;
   
   const { data: projectData } = useSWR(`${API_BASE_URL}/projects/${projectId}`, baseFetcher);
@@ -58,7 +59,7 @@ export default function ProjectApplicationsPage() {
       const response = await mutationFetcher(`${API_BASE_URL}/applications/${appId}/status`, {
         arg: { status },
         method: "PATCH"
-      });
+      } as any);
 
       if (response.success) {
         toast.success(`Application ${status.toLowerCase()} successfully`);
@@ -69,6 +70,28 @@ export default function ProjectApplicationsPage() {
       }
     } catch (error: any) {
       toast.error(error.message || "Something went wrong while updating status");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleAcceptProposal = async (appId: string) => {
+    setIsUpdating(true);
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/applications/${appId}/accept`, {
+        arg: {},
+      } as any);
+
+      if (response.success) {
+        toast.success("Contract initialized successfully!");
+        const contractId = response.data.id;
+        // Redirect to contract edit page
+        router.push(`/contracts/${contractId}/edit`);
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initialize contract");
     } finally {
       setIsUpdating(false);
     }
@@ -225,7 +248,7 @@ export default function ProjectApplicationsPage() {
                         <div className="pt-4 flex gap-3">
                           <Button 
                             className="flex-1 bg-green-600 hover:bg-green-700 h-11 rounded-xl shadow-lg shadow-green-600/20"
-                            onClick={() => handleUpdateStatus(selectedApp.id, "ACCEPTED")}
+                            onClick={() => handleAcceptProposal(selectedApp.id)}
                             disabled={isUpdating}
                           >
                             Accept Offer
