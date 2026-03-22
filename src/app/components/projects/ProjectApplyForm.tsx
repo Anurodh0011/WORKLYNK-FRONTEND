@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { mutationFetcher, baseFetcher } from "@/src/helpers/fetcher";
 import { Checkbox } from "../ui/checkbox";
+import { DialogTitle, DialogDescription } from "../ui/dialog";
 import useSWR from "swr";
 import Link from "next/link";
 
@@ -99,12 +100,14 @@ export function ProjectApplyForm({
   };
 
   const handleSubmit = async (status = "PENDING") => {
+    /* 
     if (!isProfileComplete) {
       toast.error(
         "Please complete your profile (headline & skills) before applying.",
       );
       return;
     }
+    */
 
     if (status === "PENDING" && !isChecklistComplete && checklist.length > 0) {
       toast.error("Please confirm all checklist items before submitting.");
@@ -161,6 +164,7 @@ export function ProjectApplyForm({
     );
   }
 
+  /*
   if (!isProfileComplete) {
     return (
       <div className="p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -193,6 +197,7 @@ export function ProjectApplyForm({
       </div>
     );
   }
+  */
 
   const renderChecklistStep = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -422,12 +427,12 @@ export function ProjectApplyForm({
   );
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <CardHeader className="px-0 pt-0">
-        <div className="flex items-center justify-between mb-2">
-          <CardTitle className="text-3xl font-extrabold tracking-tight">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 mb-6">
+        <div className="flex items-center justify-between">
+          <DialogTitle className="text-3xl font-extrabold tracking-tight">
             Apply for Project
-          </CardTitle>
+          </DialogTitle>
           <div className="flex items-center gap-1.5">
             <div
               className={`w-2.5 h-2.5 rounded-full ${currentStep === 1 ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-muted"}`}
@@ -437,15 +442,16 @@ export function ProjectApplyForm({
             ></div>
           </div>
         </div>
-        <CardDescription className="text-base font-medium">
+        <DialogDescription className="text-base font-medium text-muted-foreground">
           {currentStep === 1
             ? "Confirm your qualifications before proceeding."
             : "Set your bid and explain why you're perfect for this task."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-0 pb-0">
+        </DialogDescription>
+      </div>
+
+      <div className="pb-2">
         {currentStep === 1 ? renderChecklistStep() : renderDetailsStep()}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

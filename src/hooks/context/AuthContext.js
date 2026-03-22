@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
   } = useSWR(`${API_BASE_URL}/auth/me`, baseFetcher, {
     shouldRetryOnError: false,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true,
     revalidateOnReconnect: true,
   });
 

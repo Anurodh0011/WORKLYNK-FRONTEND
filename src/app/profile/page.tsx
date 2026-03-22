@@ -35,6 +35,7 @@ export default function ProfilePage() {
     documentType: "PAN",
     documentImage: "",
   });
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -97,17 +98,24 @@ export default function ProfilePage() {
 
     try {
       setSubmittingVerification(true);
+      const formData = new FormData();
+      formData.append("panVatNumber", verifyData.panVatNumber);
+      formData.append("documentType", verifyData.documentType);
+      if (documentFile) {
+        formData.append("documentImage", documentFile);
+      }
+
       const res = await fetch(`${API_BASE_URL}/profile/verify`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(verifyData),
+        body: formData,
       });
       const data = await res.json();
       if (data.success) {
         toast.success("Verification submitted");
         setProfile(data.data.profile);
         setVerifyData({ panVatNumber: "", documentType: "PAN", documentImage: "" });
+        setDocumentFile(null);
       } else {
         toast.error(data.message || "Failed to submit verification");
       }
@@ -373,13 +381,18 @@ export default function ProfilePage() {
                           </div>
 
                           <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="documentImage">Document Image URL</Label>
+                            <Label htmlFor="documentImage">Upload Document (Image)</Label>
                             <Input 
                               id="documentImage" 
-                              placeholder="URL to scanned document" 
-                              value={verifyData.documentImage}
-                              onChange={(e) => setVerifyData(prev => ({ ...prev, documentImage: e.target.value }))}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  setDocumentFile(e.target.files[0]);
+                                }
+                              }}
                             />
+                            {documentFile && <p className="text-xs text-primary font-medium">Selected: {documentFile.name}</p>}
                           </div>
                         </div>
                         <Button type="submit" variant="default" disabled={submittingVerification}>

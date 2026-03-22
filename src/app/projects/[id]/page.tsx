@@ -313,16 +313,21 @@ export default function ProjectDetailsPage() {
                     <Button 
                       className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20"
                       onClick={handleApplyClick}
+                      disabled={!!project.myApplication}
+                      variant={project.myApplication ? "outline" : "default"}
                     >
-                      Apply Now
+                      {project.myApplication ? (
+                         <span className="flex items-center gap-2">
+                           <CheckCircle2 size={20} className="text-green-500" /> Applied
+                         </span>
+                      ) : (
+                        "Apply Now"
+                      )}
                     </Button>
 
                     {/* Application Form Dialog */}
                     <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
-                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-8">
-                        <DialogHeader>
-                          <DialogTitle className="sr-only">Apply for Project</DialogTitle>
-                        </DialogHeader>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-10 border-none shadow-2xl">
                         <ProjectApplyForm 
                           projectId={project.id} 
                           checklist={project.checklist || []}
