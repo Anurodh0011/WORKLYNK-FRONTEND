@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [basicData, setBasicData] = useState({
     profilePicture: "",
     description: "",
+    phoneNumber: "",
   });
 
   const [verifyData, setVerifyData] = useState({
@@ -53,6 +54,7 @@ export default function ProfilePage() {
         setBasicData({
           profilePicture: data.data.profile.profilePicture || "",
           description: data.data.profile.description || "",
+          phoneNumber: data.data.profile.user?.phoneNumber || "",
         });
       }
     } catch (error) {
@@ -286,6 +288,15 @@ export default function ProfilePage() {
                           className="min-h-[120px]"
                           value={basicData.description}
                           onChange={(e) => setBasicData(prev => ({ ...prev, description: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <Input 
+                          id="phoneNumber" 
+                          placeholder="+977-9800000000" 
+                          value={basicData.phoneNumber}
+                          onChange={(e) => setBasicData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                         />
                       </div>
                       <Button type="submit" disabled={savingBasic}>

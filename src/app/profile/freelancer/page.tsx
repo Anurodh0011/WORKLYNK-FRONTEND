@@ -26,6 +26,7 @@ export default function FreelancerProfileBuilder() {
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState<string>("");
   const [hourlyRate, setHourlyRate] = useState<string>("");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
 
   const [education, setEducation] = useState([{ institution: "", degree: "", year: "" }]);
   const [experience, setExperience] = useState([{ company: "", role: "", duration: "", description: "" }]);
@@ -69,6 +70,7 @@ export default function FreelancerProfileBuilder() {
         if (p.headline) setHeadline(p.headline);
         if (p.skills && p.skills.length > 0) setSkills(p.skills);
         if (p.hourlyRate) setHourlyRate(p.hourlyRate.toString());
+        if (p.user?.phoneNumber) setPhoneNumber(p.user.phoneNumber);
         if (p.education && p.education.length > 0) setEducation(p.education);
         if (p.experience && p.experience.length > 0) setExperience(p.experience);
         if (p.portfolio && p.portfolio.length > 0) setPortfolio(p.portfolio);
@@ -95,6 +97,7 @@ export default function FreelancerProfileBuilder() {
         headline,
         skills,
         hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
+        phoneNumber,
         education: cleanEducation,
         experience: cleanExperience,
         portfolio: cleanPortfolio,
@@ -161,6 +164,14 @@ export default function FreelancerProfileBuilder() {
                     placeholder="e.g. 500" 
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input 
+                    placeholder="e.g. +977-9800000000" 
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
