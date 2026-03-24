@@ -39,7 +39,7 @@ export default function ContractViewPage() {
         if (action === "ACCEPT") {
           router.push(`/contracts/${contractId}/board`);
         } else {
-          router.push("/dashboard/proposals");
+          router.push("/dashboard/contracts");
         }
       } else {
         toast.error(response.message);

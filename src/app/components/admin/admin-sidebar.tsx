@@ -2,16 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { 
-  LayoutDashboard, 
-  ShieldCheck, 
-  Users, 
-  Settings, 
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  Users,
+  Settings,
   ChevronRight,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { cn } from "@/src/app/lib/utils";
+import { cn } from "@/src/lib/utils";
 import { Button } from "../ui/button";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
 
@@ -41,20 +41,22 @@ export function AdminSidebar() {
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 pathname === item.href
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
               <item.icon size={18} />
               {item.name}
-              {pathname === item.href && <ChevronRight size={14} className="ml-auto" />}
+              {pathname === item.href && (
+                <ChevronRight size={14} className="ml-auto" />
+              )}
             </Link>
           ))}
         </nav>
       </div>
-      
+
       <div className="mt-auto p-4 border-t">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={logout}
         >
