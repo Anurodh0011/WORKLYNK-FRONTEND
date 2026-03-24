@@ -15,7 +15,8 @@ import {
   Eye, 
   FileText,
   IndianRupee,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2
 } from "lucide-react";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Button } from "@/src/app/components/ui/button";
@@ -51,6 +52,34 @@ export default function ClientProjectsPage() {
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const getContractBadge = (contract: any) => {
+    if (!contract) return null;
+    
+    if (contract.status === "DRAFT" || contract.status === "PENDING_FREELANCER") {
+      return <Badge className="bg-amber-500 hover:bg-amber-600 gap-1 text-white border-0"><FileText size={12} /> Contract Progress</Badge>;
+    }
+    
+    if (contract.status === "ACTIVE") {
+      const milestones = contract.milestones || [];
+      const paidCount = milestones.filter((m: any) => m.status === "PAID").length;
+      const reviewCount = milestones.filter((m: any) => m.status === "IN_REVIEW").length;
+      
+      if (paidCount > 0) {
+        return <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 text-white border-0"><CheckCircle2 size={12} /> Milestone {paidCount} Completed</Badge>;
+      } else if (reviewCount > 0) {
+        return <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 text-white border-0">Started</Badge>;
+      } else {
+        return <Badge className="bg-slate-500 hover:bg-slate-600 gap-1 text-white border-0">Not Started</Badge>;
+      }
+    }
+    
+    if (contract.status === "COMPLETED") {
+       return <Badge className="bg-green-500 gap-1 text-white border-0"><CheckCircle2 size={12} /> Completed</Badge>;
+    }
+    
+    return null;
   };
 
   return (
@@ -99,6 +128,7 @@ export default function ClientProjectsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-3">
                         {getStatusBadge(project.status)}
+                        {project.contracts && project.contracts.length > 0 && getContractBadge(project.contracts[0])}
                         <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                           <Clock size={12} /> Posted on {new Date(project.createdAt).toLocaleDateString()}
                         </span>

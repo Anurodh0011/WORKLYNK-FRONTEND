@@ -13,7 +13,8 @@ import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
-import { Plus, MoreVertical, Edit2, Trash2, GripVertical, FileText, Calendar, User } from "lucide-react";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
+import { Plus, MoreVertical, Edit2, Trash2, GripVertical, FileText, Calendar, User, CheckCircle2, AlertCircle, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
 
 interface Task {
@@ -33,6 +34,8 @@ interface Column {
 export default function BoardPage() {
   const params = useParams();
   const contractId = params.id;
+  const { user }: any = useAuthContext();
+  const isClient = user?.role === "CLIENT";
 
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL}/kanban/${contractId}`,
@@ -41,11 +44,18 @@ export default function BoardPage() {
 
   const [columns, setColumns] = useState<Column[]>([]);
   const [projectTitle, setProjectTitle] = useState("Project Workspace");
+  const [milestones, setMilestones] = useState<any[]>([]);
+  const [activeMilestone, setActiveMilestone] = useState<any>(null);
+
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [showColumnDialog, setShowColumnDialog] = useState(false);
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
   const [editingColumn, setEditingColumn] = useState<{ id: string, name: string } | null>(null);
+  
+  const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
+  const [milestoneNotes, setMilestoneNotes] = useState("");
+  const [milestoneFeedback, setMilestoneFeedback] = useState("");
 
   useEffect(() => {
     if (data?.data) {
@@ -53,10 +63,17 @@ export default function BoardPage() {
       if (data.data.contract?.project?.title) {
         setProjectTitle(data.data.contract.project.title);
       }
+      if (data.data.contract?.milestones) {
+        setMilestones(data.data.contract.milestones);
+        const active = data.data.contract.milestones.find((m: any) => m.status !== "PAID");
+        setActiveMilestone(active);
+      }
     }
   }, [data]);
 
   const onDragEnd = async (result: DropResult) => {
+    if (isClient) return;
+
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
@@ -137,6 +154,44 @@ export default function BoardPage() {
     }
   };
 
+  const handleSubmitMilestone = async () => {
+    if (!activeMilestone) return;
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/submit`, {
+        arg: { notes: milestoneNotes },
+      } as any);
+      if (response.success) {
+        toast.success("Milestone submitted for review");
+        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        setShowMilestoneDialog(false);
+      }
+    } catch (err) {
+      toast.error("Failed to submit milestone");
+    }
+  };
+
+  const handleReviewMilestone = async (status: "PAID" | "PENDING") => {
+    if (!activeMilestone) return;
+    if (status === "PENDING" && !milestoneFeedback.trim()) {
+       toast.error("Please provide feedback for revisions.");
+       return;
+    }
+    
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/review`, {
+        arg: { status, feedback: milestoneFeedback },
+      } as any);
+      if (response.success) {
+        toast.success(`Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`);
+        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        setShowMilestoneDialog(false);
+        setMilestoneFeedback("");
+      }
+    } catch (err) {
+      toast.error("Failed to review milestone");
+    }
+  };
+
   if (isLoading) return <BaseLayout><div className="p-20 text-center">Loading board...</div></BaseLayout>;
 
   return (
@@ -149,7 +204,32 @@ export default function BoardPage() {
             <p className="text-sm text-slate-500 font-medium">Manage tasks and track progress</p>
           </div>
           <div className="flex gap-4">
-             {/* Add overall board metrics or users here if needed */}
+             {activeMilestone ? (
+               <div className="bg-white border text-left border-primary/20 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                     <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm tracking-tight text-slate-800">Target: {activeMilestone.title}</h4>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black">
+                      Status: <span className={activeMilestone.status === "IN_REVIEW" ? "text-amber-500" : "text-primary"}>{activeMilestone.status}</span>
+                    </p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant={activeMilestone.status === "IN_REVIEW" && isClient ? "default" : "outline"} 
+                    className="ml-4 rounded-xl shadow-sm text-xs font-bold"
+                    onClick={() => setShowMilestoneDialog(true)}
+                  >
+                    {isClient ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") : (activeMilestone.status === "PENDING" ? "Mark Complete" : "View Feedback")}
+                  </Button>
+               </div>
+             ) : (
+                <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
+                  <CheckCircle2 size={20} />
+                  <h4 className="font-bold text-sm">All Milestones Completed!</h4>
+                </div>
+             )}
           </div>
         </div>
 
@@ -161,25 +241,28 @@ export default function BoardPage() {
                 <div key={column.id} className="w-80 flex flex-col h-full rounded-3xl bg-slate-200/40 border border-slate-200/60 p-4">
                   <div className="flex items-center justify-between mb-4 px-2">
                     <h3 
-                        className="font-black text-sm uppercase tracking-widest text-slate-600 truncate cursor-pointer hover:text-primary transition-colors"
+                        className={`font-black text-sm uppercase tracking-widest text-slate-600 truncate transition-colors ${!isClient ? 'cursor-pointer hover:text-primary' : ''}`}
                         onClick={() => {
+                            if (isClient) return;
                             setEditingColumn({ id: column.id, name: column.name });
                             setShowColumnDialog(true);
                         }}
                     >
                       {column.name} <span className="ml-2 text-slate-400 font-bold">{column.tasks.length}</span>
                     </h3>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
-                        onClick={() => {
-                            setActiveColumnId(column.id);
-                            setShowTaskDialog(true);
-                        }}
-                    >
-                      <Plus size={18} />
-                    </Button>
+                    {!isClient && (
+                      <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
+                          onClick={() => {
+                              setActiveColumnId(column.id);
+                              setShowTaskDialog(true);
+                          }}
+                      >
+                        <Plus size={18} />
+                      </Button>
+                    )}
                   </div>
 
                   <Droppable droppableId={column.id}>
@@ -190,7 +273,7 @@ export default function BoardPage() {
                         className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
                       >
                         {column.tasks.map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index}>
+                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isClient}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -286,6 +369,99 @@ export default function BoardPage() {
           <DialogFooter>
             <Button variant="ghost" className="text-xs" onClick={() => setShowColumnDialog(false)}>Cancel</Button>
             <Button onClick={handleRenameColumn} className="rounded-xl text-xs font-bold">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Milestone Dialog - Dynamic Container */}
+      <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
+        <DialogContent className="rounded-3xl max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+               {isClient ? (activeMilestone?.status === "IN_REVIEW" ? "Provide Milestone Feedback" : "Milestone Details") : "Milestone Completion"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4 px-2">
+            <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+              <h4 className="font-black text-lg mb-1">{activeMilestone?.title}</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">{activeMilestone?.description}</p>
+              <div className="mt-4 flex items-center justify-between text-sm font-bold">
+                 <span className="flex items-center gap-1 text-primary"><IndianRupee size={16} /> {activeMilestone?.amount}</span>
+                 <span className="flex items-center gap-1 text-muted-foreground"><Calendar size={16} /> Due {activeMilestone?.dueDate ? new Date(activeMilestone.dueDate).toLocaleDateString() : 'N/A'}</span>
+              </div>
+            </div>
+
+            {/* If Client Feedback exists, show it */}
+            {activeMilestone?.clientFeedback && (
+              <div className="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 text-sm">
+                <span className="font-bold flex items-center gap-1 text-amber-700 mb-1"><AlertCircle size={14} /> Client Feedback</span>
+                <p className="text-amber-900">{activeMilestone.clientFeedback}</p>
+              </div>
+            )}
+
+            {/* If Freelancer Notes exists, show it */}
+            {activeMilestone?.freelancerNotes && (
+              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 text-sm">
+                <span className="font-bold text-primary mb-1 block">Freelancer Notes</span>
+                <p className="text-slate-700">{activeMilestone.freelancerNotes}</p>
+              </div>
+            )}
+
+            {/* Inputs based on Role and Status */}
+            {!isClient && activeMilestone?.status === "PENDING" && (
+              <div className="space-y-2 mt-4">
+                <Label className="font-bold">Add Notes for Client (Optional)</Label>
+                <Textarea 
+                  placeholder="Describe what was completed..." 
+                  value={milestoneNotes}
+                  onChange={(e) => setMilestoneNotes(e.target.value)}
+                  className="rounded-xl border-slate-200 focus:ring-primary/20"
+                />
+              </div>
+            )}
+
+            {isClient && activeMilestone?.status === "IN_REVIEW" && (
+              <div className="space-y-2 mt-4">
+                <Label className="font-bold">Feedback / Revision Request</Label>
+                <Textarea 
+                  placeholder="If revisions are needed, type them here. If approving, this is optional." 
+                  value={milestoneFeedback}
+                  onChange={(e) => setMilestoneFeedback(e.target.value)}
+                  className="rounded-xl border-slate-200 focus:ring-primary/20 min-h-[100px]"
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0 border-t border-slate-100 pt-4">
+            <Button variant="ghost" className="rounded-xl" onClick={() => setShowMilestoneDialog(false)}>Close</Button>
+            
+            {!isClient && activeMilestone?.status === "PENDING" && (
+                <Button 
+                    onClick={handleSubmitMilestone} 
+                    className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
+                >
+                  Submit for Review
+                </Button>
+            )}
+
+            {isClient && activeMilestone?.status === "IN_REVIEW" && (
+                <>
+                  <Button 
+                      variant="outline"
+                      onClick={() => handleReviewMilestone("PENDING")} 
+                      className="rounded-xl font-bold border-amber-500/50 text-amber-600 hover:bg-amber-50"
+                  >
+                    Send Feedback
+                  </Button>
+                  <Button 
+                      onClick={() => handleReviewMilestone("PAID")} 
+                      className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+                  >
+                    Approve & Pay
+                  </Button>
+                </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
