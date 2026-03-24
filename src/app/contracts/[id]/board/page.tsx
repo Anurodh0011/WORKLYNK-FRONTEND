@@ -27,9 +27,28 @@ interface Task {
 interface Column {
   id: string;
   name: string;
+  color?: string;
   order: number;
   tasks: Task[];
 }
+
+const COLOR_MAP: any = {
+  slate: "bg-slate-200/40 border-slate-200/60",
+  blue: "bg-blue-100/50 border-blue-200/60",
+  green: "bg-green-100/50 border-green-200/60",
+  amber: "bg-amber-100/50 border-amber-200/60",
+  red: "bg-red-100/50 border-red-200/60",
+  purple: "bg-purple-100/50 border-purple-200/60"
+};
+
+const LABEL_MAP: any = {
+  slate: "text-slate-600",
+  blue: "text-blue-700",
+  green: "text-green-700",
+  amber: "text-amber-700",
+  red: "text-red-700",
+  purple: "text-purple-700"
+};
 
 export default function BoardPage() {
   const params = useParams();
@@ -37,8 +56,12 @@ export default function BoardPage() {
   const { user }: any = useAuthContext();
   const isClient = user?.role === "CLIENT";
 
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+
   const { data, error, isLoading } = useSWR(
-    `${API_BASE_URL}/kanban/${contractId}`,
+    selectedMilestoneId 
+      ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` 
+      : `${API_BASE_URL}/kanban/${contractId}`,
     baseFetcher
   );
 
@@ -49,13 +72,17 @@ export default function BoardPage() {
 
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [showColumnDialog, setShowColumnDialog] = useState(false);
+  const [showCreateColumnDialog, setShowCreateColumnDialog] = useState(false);
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
   const [editingColumn, setEditingColumn] = useState<{ id: string, name: string } | null>(null);
+  const [newColumn, setNewColumn] = useState({ name: "", color: "slate" });
   
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
   const [milestoneNotes, setMilestoneNotes] = useState("");
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
+
+  const isReadOnly = isClient || activeMilestone?.status === "PAID" || activeMilestone?.status === "IN_REVIEW";
 
   useEffect(() => {
     if (data?.data) {
@@ -65,14 +92,20 @@ export default function BoardPage() {
       }
       if (data.data.contract?.milestones) {
         setMilestones(data.data.contract.milestones);
-        const active = data.data.contract.milestones.find((m: any) => m.status !== "PAID");
+        let active = null;
+        if (selectedMilestoneId) {
+          active = data.data.contract.milestones.find((m: any) => m.id === selectedMilestoneId);
+        } else {
+          active = data.data.contract.milestones.find((m: any) => m.status !== "PAID") || data.data.contract.milestones[0];
+          if (active) setSelectedMilestoneId(active.id);
+        }
         setActiveMilestone(active);
       }
     }
-  }, [data]);
+  }, [data, selectedMilestoneId]);
 
   const onDragEnd = async (result: DropResult) => {
-    if (isClient) return;
+    if (isReadOnly) return;
 
     const { destination, source, draggableId } = result;
 
@@ -154,6 +187,30 @@ export default function BoardPage() {
     }
   };
 
+  const handleCreateColumn = async () => {
+    if (!newColumn.name.trim() || !activeMilestone) return;
+
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns`, {
+        arg: { 
+          contractId, 
+          milestoneId: activeMilestone.id,
+          name: newColumn.name,
+          color: newColumn.color
+        },
+      } as any);
+
+      if (response.success) {
+        toast.success("Column created");
+        mutate(selectedMilestoneId ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` : `${API_BASE_URL}/kanban/${contractId}`);
+        setShowCreateColumnDialog(false);
+        setNewColumn({ name: "", color: "slate" });
+      }
+    } catch (err) {
+      toast.error("Failed to create column");
+    }
+  };
+
   const handleSubmitMilestone = async () => {
     if (!activeMilestone) return;
     try {
@@ -196,54 +253,84 @@ export default function BoardPage() {
 
   return (
     <BaseLayout>
-      <div className="h-[calc(100vh-64px)] bg-slate-50 overflow-hidden flex flex-col">
-        {/* Board Header */}
-        <div className="px-8 py-6 flex items-center justify-between shrink-0">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">{projectTitle}</h1>
-            <p className="text-sm text-slate-500 font-medium">Manage tasks and track progress</p>
+      <div className="h-[calc(100vh-64px)] bg-slate-50 overflow-hidden flex flex-row">
+        {/* Sidebar */}
+        <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-10">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="font-black text-lg text-slate-800 tracking-tight">Milestones</h2>
+            <p className="text-xs text-muted-foreground font-medium mt-1">Project Roadmap</p>
           </div>
-          <div className="flex gap-4">
-             {activeMilestone ? (
-               <div className="bg-white border text-left border-primary/20 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                     <CheckCircle2 size={20} />
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            {milestones.map((m: any, index: number) => (
+              <div 
+                key={m.id}
+                onClick={() => setSelectedMilestoneId(m.id)}
+                className={`p-4 rounded-2xl cursor-pointer transition-all border ${selectedMilestoneId === m.id ? 'bg-primary/5 border-primary shadow-sm shadow-primary/10' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${selectedMilestoneId === m.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    {index + 1}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-sm tracking-tight text-slate-800">Target: {activeMilestone.title}</h4>
-                    <p className="text-[10px] text-muted-foreground uppercase font-black">
-                      Status: <span className={activeMilestone.status === "IN_REVIEW" ? "text-amber-500" : "text-primary"}>{activeMilestone.status}</span>
-                    </p>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant={activeMilestone.status === "IN_REVIEW" && isClient ? "default" : "outline"} 
-                    className="ml-4 rounded-xl shadow-sm text-xs font-bold"
-                    onClick={() => setShowMilestoneDialog(true)}
-                  >
-                    {isClient ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") : (activeMilestone.status === "PENDING" ? "Mark Complete" : "View Feedback")}
-                  </Button>
-               </div>
-             ) : (
-                <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
-                  <CheckCircle2 size={20} />
-                  <h4 className="font-bold text-sm">All Milestones Completed!</h4>
+                  <h4 className={`text-sm font-bold truncate ${selectedMilestoneId === m.id ? 'text-primary' : 'text-slate-700'}`}>{m.title}</h4>
                 </div>
-             )}
+                <div className="flex items-center justify-between mt-3">
+                  <span className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === 'PAID' ? 'bg-green-100 text-green-700' : m.status === 'IN_REVIEW' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{m.status}</span>
+                  <span className="text-xs font-bold text-slate-500">रू {m.amount}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Board Body */}
-        <div className="flex-1 overflow-x-auto px-8 pb-8 custom-scrollbar">
+        {/* Main Board Area */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-[url('/bg-patterns.svg')] bg-repeat">
+          {/* Board Header */}
+          <div className="px-8 py-6 flex items-center justify-between shrink-0 bg-white/60 backdrop-blur-md border-b border-white/40">
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">{projectTitle}</h1>
+              <p className="text-sm text-slate-500 font-medium">Manage tasks and track progress for Milestone {milestones.findIndex(m => m.id === selectedMilestoneId) + 1}</p>
+            </div>
+            <div className="flex gap-4">
+               {activeMilestone ? (
+                 <div className="bg-white border text-left border-primary/20 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                       <CheckCircle2 size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm tracking-tight text-slate-800">Target: {activeMilestone.title}</h4>
+                      <p className="text-[10px] text-muted-foreground uppercase font-black">
+                        Status: <span className={activeMilestone.status === "IN_REVIEW" ? "text-amber-500" : activeMilestone.status === "PAID" ? "text-green-500" : "text-primary"}>{activeMilestone.status}</span>
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant={activeMilestone.status === "IN_REVIEW" && isClient ? "default" : "outline"} 
+                      className="ml-4 rounded-xl shadow-sm text-xs font-bold"
+                      onClick={() => setShowMilestoneDialog(true)}
+                    >
+                      {isClient ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") : (activeMilestone.status === "PENDING" ? "Submit Work" : "View Feedback")}
+                    </Button>
+                 </div>
+               ) : (
+                  <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
+                    <CheckCircle2 size={20} />
+                    <h4 className="font-bold text-sm">Milestone Finished!</h4>
+                  </div>
+               )}
+            </div>
+          </div>
+
+          {/* Board Body */}
+          <div className="flex-1 overflow-x-auto px-8 py-6 custom-scrollbar">
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-6 h-full min-w-max">
               {columns.map((column) => (
-                <div key={column.id} className="w-80 flex flex-col h-full rounded-3xl bg-slate-200/40 border border-slate-200/60 p-4">
+                <div key={column.id} className={`w-80 flex flex-col h-full rounded-3xl border p-4 ${COLOR_MAP[column.color || "slate"]}`}>
                   <div className="flex items-center justify-between mb-4 px-2">
                     <h3 
-                        className={`font-black text-sm uppercase tracking-widest text-slate-600 truncate transition-colors ${!isClient ? 'cursor-pointer hover:text-primary' : ''}`}
+                        className={`font-black text-sm uppercase tracking-widest truncate transition-colors ${LABEL_MAP[column.color || "slate"]} ${!isReadOnly ? 'cursor-pointer hover:opacity-75' : ''}`}
                         onClick={() => {
-                            if (isClient) return;
+                            if (isReadOnly) return;
                             setEditingColumn({ id: column.id, name: column.name });
                             setShowColumnDialog(true);
                         }}
@@ -265,7 +352,7 @@ export default function BoardPage() {
                     )}
                   </div>
 
-                  <Droppable droppableId={column.id}>
+                  <Droppable droppableId={column.id} isDropDisabled={isReadOnly}>
                     {(provided) => (
                       <div
                         {...provided.droppableProps}
@@ -273,7 +360,7 @@ export default function BoardPage() {
                         className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
                       >
                         {column.tasks.map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isClient}>
+                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isReadOnly}>
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -309,10 +396,69 @@ export default function BoardPage() {
                   </Droppable>
                 </div>
               ))}
+
+              {/* Add Column Button */}
+              {!isReadOnly && activeMilestone && (
+                <div className="w-80 shrink-0">
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-16 rounded-3xl border-dashed border-2 bg-transparent hover:bg-white text-slate-500 hover:text-primary font-bold transition-all shadow-sm"
+                    onClick={() => setShowCreateColumnDialog(true)}
+                  >
+                    <Plus size={18} className="mr-2" /> Add Container
+                  </Button>
+                </div>
+              )}
             </div>
           </DragDropContext>
+          </div>
         </div>
       </div>
+
+      {/* Create Column Dialog */}
+      <Dialog open={showCreateColumnDialog} onOpenChange={setShowCreateColumnDialog}>
+        <DialogContent className="rounded-3xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">New Container</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="font-bold">Container Name</Label>
+              <Input 
+                placeholder="e.g. In Progress, Review..." 
+                value={newColumn.name}
+                onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
+                className="rounded-xl border-slate-200 focus:ring-primary/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold">Label Color</Label>
+              <select 
+                value={newColumn.color}
+                onChange={(e) => setNewColumn({ ...newColumn, color: e.target.value })}
+                className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm focus:ring-primary/20 outline-none"
+              >
+                <option value="slate">Slate (Default)</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="amber">Amber</option>
+                <option value="red">Red</option>
+                <option value="purple">Purple</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" className="rounded-xl" onClick={() => setShowCreateColumnDialog(false)}>Cancel</Button>
+            <Button 
+                onClick={handleCreateColumn} 
+                disabled={!newColumn.name.trim()}
+                className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
+            >
+              Create Container
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Task Creation Dialog */}
       <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
