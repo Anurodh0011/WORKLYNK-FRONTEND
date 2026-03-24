@@ -11,7 +11,7 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
-import { FileText, Send, ArrowLeft, Plus, Trash2, Calendar, IndianRupee } from "lucide-react";
+import { FileText, Send, ArrowLeft, Plus, Trash2, Calendar, IndianRupee, MessageSquare, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -173,6 +173,21 @@ export default function ContractEditPage() {
           <div className="lg:col-span-2 space-y-8">
             <section className="space-y-4">
               <h1 className="text-3xl font-extrabold tracking-tight">Finalize Contract</h1>
+              
+              {contract.remarks && (
+                <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-amber-800 font-black text-sm uppercase tracking-wider">
+                    <MessageSquare size={18} /> Freelancer Feedback
+                  </div>
+                  <p className="text-amber-900 leading-relaxed italic">
+                    "{contract.remarks}"
+                  </p>
+                  <p className="text-xs text-amber-700 font-medium">
+                    Please adjust the terms or milestones below and resend the offer.
+                  </p>
+                </div>
+              )}
+
               <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
                 <p className="text-muted-foreground text-sm">
                   Defining terms for <span className="font-bold text-foreground">{contract.project.title}</span> with <span className="font-bold text-primary">{contract.freelancer.name}</span>.

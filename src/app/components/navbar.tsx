@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Bookmark,
   Users,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -93,6 +94,12 @@ export function Navbar() {
             <PlusCircle size={16} /> Post Project
           </Link>
           <Link
+            href="/dashboard/contracts"
+            className="hover:text-secondary flex items-center gap-1"
+          >
+            <FileText size={16} /> My Contracts
+          </Link>
+          <Link
             href="/dashboard/projects"
             className="hover:text-secondary flex items-center gap-1"
           >
@@ -122,6 +129,12 @@ export function Navbar() {
             className="hover:text-secondary flex items-center gap-1"
           >
             <Search size={16} /> Browse Projects
+          </Link>
+          <Link
+            href="/dashboard/contracts"
+            className="hover:text-secondary flex items-center gap-1"
+          >
+            <FileText size={16} /> My Contracts
           </Link>
           <Link
             href="/dashboard/applications"

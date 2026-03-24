@@ -13,7 +13,8 @@ import {
   AlertCircle,
   IndianRupee,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from "lucide-react";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Card, CardContent } from "@/src/app/components/ui/card";
@@ -76,9 +77,15 @@ export default function MyApplicationsPage() {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                          {getStatusBadge(app.status)}
-                         <span className="text-[10px] text-muted-foreground font-medium">Applied on {new Date(app.createdAt).toLocaleDateString()}</span>
+                         {app.contract && app.contract.status === "PENDING_FREELANCER" && (
+                           <Badge className="bg-amber-500 hover:bg-amber-600 gap-1 text-white border-0"><FileText size={12} /> Contract Received</Badge>
+                         )}
+                         {app.contract && app.contract.status === "ACTIVE" && (
+                           <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 text-white border-0"><Briefcase size={12} /> Active</Badge>
+                         )}
+                         <span className="text-[10px] text-muted-foreground font-medium w-full sm:w-auto mt-1 sm:mt-0">Applied on {new Date(app.createdAt).toLocaleDateString()}</span>
                       </div>
                       <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-1">
                         {app.project.title}
@@ -96,15 +103,26 @@ export default function MyApplicationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <Link href={`/projects/${app.project.id}`} className="flex-1 md:flex-none">
-                        <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5">
-                          View Project <ExternalLink size={14} />
-                        </Button>
-                      </Link>
-                      <Button variant="ghost" size="icon" className="group-hover:translate-x-1 transition-transform">
-                        <ChevronRight size={20} />
-                      </Button>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                      {app.contract && app.contract.status === "PENDING_FREELANCER" ? (
+                        <Link href={`/contracts/${app.contract.id}/view`} className="w-full md:w-auto">
+                          <Button className="w-full gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 font-bold px-6">
+                            Review Contract <ChevronRight size={16} />
+                          </Button>
+                        </Link>
+                      ) : app.contract && app.contract.status === "ACTIVE" ? (
+                         <Link href={`/contracts/${app.contract.id}/board`} className="w-full md:w-auto">
+                          <Button className="w-full gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20 font-bold px-6">
+                            Project Board <ChevronRight size={16} />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link href={`/projects/${app.project.id}`} className="w-full md:w-auto">
+                          <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 font-semibold">
+                            View Project <ExternalLink size={14} />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </CardContent>
