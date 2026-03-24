@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import BaseLayout from "@/src/app/components/base-layout";
 import useSWR from "swr";
 import { API_BASE_URL } from "@/src/helpers/config";
@@ -28,6 +28,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/src/app/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/app/components/ui/tabs";
 
 export default function ClientProjectsPage() {
   const { data, error, isLoading } = useSWR(
@@ -36,6 +37,30 @@ export default function ClientProjectsPage() {
   );
 
   const projects = data?.data || [];
+  const [activeTab, setActiveTab] = useState("All");
+
+  const getDerivedStatus = (project: any) => {
+    if (project.status === "COMPLETED") return "Completed";
+    
+    const contract = project.contracts?.[0];
+    if (!contract) return "Not Started";
+    
+    if (contract.status === "COMPLETED") return "Completed";
+    if (contract.status === "ACTIVE") {
+      const milestones = contract.milestones || [];
+      const paidCount = milestones.filter((m: any) => m.status === "PAID").length;
+      const reviewCount = milestones.filter((m: any) => m.status === "IN_REVIEW").length;
+      if (paidCount > 0 || reviewCount > 0) return "Started";
+      return "Not Started";
+    }
+    
+    return "Not Started"; // DRAFT, PENDING_FREELANCER, etc.
+  };
+
+  const filteredProjects = projects.filter((project: any) => {
+    if (activeTab === "All") return true;
+    return getDerivedStatus(project) === activeTab;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,108 +122,132 @@ export default function ClientProjectsPage() {
           </Link>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-muted/40 animate-pulse rounded-2xl"></div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-20 bg-destructive/5 rounded-3xl border border-destructive/20">
-            <p className="text-destructive font-bold mb-2">Error loading your projects</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-24 bg-muted/10 rounded-3xl border border-dashed border-muted-foreground/20">
-            <Briefcase size={48} className="mx-auto text-muted-foreground mb-4 opacity-20" />
-            <h3 className="text-xl font-bold mb-2">No projects posted yet</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-              Post your first project to start receiving proposals from our network of skilled freelancers.
-            </p>
-            <Link href="/projects/new">
-              <Button size="lg" className="rounded-xl px-8">Get Started</Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {projects.map((project: any) => (
-              <Card key={project.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        {getStatusBadge(project.status)}
-                        {project.contracts && project.contracts.length > 0 && getContractBadge(project.contracts[0])}
-                        <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                          <Clock size={12} /> Posted on {new Date(project.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-2">
-                        {project.title}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1.5 font-medium text-foreground">
-                          <Users size={16} className="text-primary" />
-                          <span>{project._count.applications} Proposals</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <IndianRupee size={16} />
-                          <span>
-                            {project.budgetType === "FIXED" 
-                              ? `${project.budgetMin} - ${project.budgetMax}` 
-                              : `${project.budgetMin}/hr`}
+        <Tabs defaultValue="All" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-4 mb-8 bg-muted/50 p-1 rounded-2xl">
+            <TabsTrigger value="All" className="rounded-xl">All</TabsTrigger>
+            <TabsTrigger value="Not Started" className="rounded-xl">Not Started</TabsTrigger>
+            <TabsTrigger value="Started" className="rounded-xl">Started</TabsTrigger>
+            <TabsTrigger value="Completed" className="rounded-xl">Completed</TabsTrigger>
+          </TabsList>
+
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 bg-muted/40 animate-pulse rounded-2xl"></div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-20 bg-destructive/5 rounded-3xl border border-destructive/20">
+              <p className="text-destructive font-bold mb-2">Error loading your projects</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-24 bg-muted/10 rounded-3xl border border-dashed border-muted-foreground/20">
+              <Briefcase size={48} className="mx-auto text-muted-foreground mb-4 opacity-20" />
+              <h3 className="text-xl font-bold mb-2">No projects found</h3>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-8">
+                {activeTab === "All" ? "Post your first project to start receiving proposals from our network of skilled freelancers." : `You have no ${activeTab.toLowerCase()} projects.`}
+              </p>
+              {activeTab === "All" && (
+                <Link href="/projects/new">
+                  <Button size="lg" className="rounded-xl px-8">Get Started</Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredProjects.map((project: any) => (
+                <Card key={project.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          {getStatusBadge(project.status)}
+                          {project.contracts && project.contracts.length > 0 && getContractBadge(project.contracts[0])}
+                          <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                            <Clock size={12} /> Posted on {new Date(project.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <FileText size={16} />
-                          <span>{project.category}</span>
+                        <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-2">
+                          {project.title}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5 font-medium text-foreground">
+                            <Users size={16} className="text-primary" />
+                            <span>{project._count.applications} Proposals</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <IndianRupee size={16} />
+                            <span>
+                              {project.budgetType === "FIXED" 
+                                ? `${project.budgetMin} - ${project.budgetMax}` 
+                                : `${project.budgetMin}/hr`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <FileText size={16} />
+                            <span>{project.category}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      {project.status === "DRAFT" ? (
-                        <Link href={`/projects/new?id=${project.id}`} className="flex-1 md:flex-none">
-                          <Button className="w-full gap-2 rounded-xl shadow-lg shadow-primary/20">
-                            Resume Creation <ChevronRight size={16} />
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
-                          <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
-                            Review Proposals <ChevronRight size={16} />
-                          </Button>
-                        </Link>
-                      )}
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10">
-                            <MoreVertical size={20} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-primary/10">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/projects/${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                              <Eye size={16} /> View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          {project._count.applications === 0 && (
+                      <div className="flex items-center gap-3">
+                        {project.status === "DRAFT" ? (
+                          <Link href={`/projects/new?id=${project.id}`} className="flex-1 md:flex-none">
+                            <Button className="w-full gap-2 rounded-xl shadow-lg shadow-primary/20">
+                              Resume Creation <ChevronRight size={16} />
+                            </Button>
+                          </Link>
+                        ) : project.contracts?.[0]?.status === "ACTIVE" ? (
+                          <Link href={`/contracts/${project.contracts[0].id}/board`} className="flex-1 md:flex-none">
+                            <Button className="w-full gap-2 rounded-xl bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20 text-white">
+                              Project Board <Briefcase size={16} />
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
+                            <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                              Review Proposals <ChevronRight size={16} />
+                            </Button>
+                          </Link>
+                        )}
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-10 w-10">
+                              <MoreVertical size={20} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-primary/10">
                             <DropdownMenuItem asChild>
-                              <Link href={`/projects/new?id=${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                                <Edit3 size={16} /> {project.status === "DRAFT" ? "Continue Editing" : "Edit Project"}
+                              <Link href={`/projects/${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                <Eye size={16} /> View Details
                               </Link>
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            {project.contracts?.[0]?.status === "ACTIVE" && (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/contracts/${project.contracts[0].id}/view`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                  <FileText size={16} /> View Contract
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {project._count.applications === 0 && (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/projects/new?id=${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                  <Edit3 size={16} /> {project.status === "DRAFT" ? "Continue Editing" : "Edit Project"}
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Tabs>
       </div>
     </BaseLayout>
   );
