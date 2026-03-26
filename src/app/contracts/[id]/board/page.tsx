@@ -32,13 +32,13 @@ interface Column {
   tasks: Task[];
 }
 
-const COLOR_MAP: any = {
-  slate: "bg-slate-200/40 border-slate-200/60",
-  blue: "bg-blue-100/50 border-blue-200/60",
-  green: "bg-green-100/50 border-green-200/60",
-  amber: "bg-amber-100/50 border-amber-200/60",
-  red: "bg-red-100/50 border-red-200/60",
-  purple: "bg-purple-100/50 border-purple-200/60"
+const COLOR_MAP: Record<string, string> = {
+  slate: "bg-slate-50 border-slate-200 border-t-4 border-t-slate-400",
+  blue: "bg-slate-50 border-slate-200 border-t-4 border-t-blue-500",
+  green: "bg-slate-50 border-slate-200 border-t-4 border-t-green-500",
+  amber: "bg-slate-50 border-slate-200 border-t-4 border-t-amber-500",
+  red: "bg-slate-50 border-slate-200 border-t-4 border-t-red-500",
+  purple: "bg-slate-50 border-slate-200 border-t-4 border-t-purple-500"
 };
 
 const LABEL_MAP: any = {
@@ -112,7 +112,25 @@ export default function BoardPage() {
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    // Optimistic Update
+    if (result.type === "COLUMN") {
+      const newCols = Array.from(columns);
+      const [movedCol] = newCols.splice(source.index, 1);
+      newCols.splice(destination.index, 0, movedCol);
+      setColumns(newCols);
+
+      try {
+        await mutationFetcher(`${API_BASE_URL}/kanban/columns/${draggableId}/move`, {
+          arg: { newOrder: destination.index },
+          method: "PATCH"
+        } as any);
+      } catch (err) {
+        toast.error("Failed to move container");
+        mutate(`${API_BASE_URL}/kanban/${contractId}`); // Rollback
+      }
+      return;
+    }
+
+    // Optimistic Update for Tasks
     const sourceCol = columns.find(col => col.id === source.droppableId);
     const destCol = columns.find(col => col.id === destination.droppableId);
     
@@ -211,6 +229,22 @@ export default function BoardPage() {
     }
   };
 
+  const handleDeleteColumn = async (columnId: string) => {
+    if (!confirm("Are you sure you want to delete this container and all its tasks?")) return;
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${columnId}`, {
+        method: "DELETE"
+      } as any);
+
+      if (response && response.success !== false) {
+        toast.success("Container deleted");
+        mutate(selectedMilestoneId ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` : `${API_BASE_URL}/kanban/${contractId}`);
+      }
+    } catch (err) {
+      toast.error("Failed to delete container");
+    }
+  };
+
   const handleSubmitMilestone = async () => {
     if (!activeMilestone) return;
     try {
@@ -260,7 +294,7 @@ export default function BoardPage() {
             <h2 className="font-black text-lg text-slate-800 tracking-tight">Milestones</h2>
             <p className="text-xs text-muted-foreground font-medium mt-1">Project Roadmap</p>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/30">
             {milestones.map((m: any, index: number) => (
               <div 
                 key={m.id}
@@ -283,9 +317,9 @@ export default function BoardPage() {
         </div>
 
         {/* Main Board Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[url('/bg-patterns.svg')] bg-repeat">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
           {/* Board Header */}
-          <div className="px-8 py-6 flex items-center justify-between shrink-0 bg-white/60 backdrop-blur-md border-b border-white/40">
+          <div className="px-8 py-6 flex items-center justify-between shrink-0 bg-white border-b border-slate-200 shadow-sm z-10">
             <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">{projectTitle}</h1>
               <p className="text-sm text-slate-500 font-medium">Manage tasks and track progress for Milestone {milestones.findIndex(m => m.id === selectedMilestoneId) + 1}</p>
@@ -323,93 +357,123 @@ export default function BoardPage() {
           {/* Board Body */}
           <div className="flex-1 overflow-x-auto px-8 py-6 custom-scrollbar">
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-6 h-full min-w-max">
-              {columns.map((column) => (
-                <div key={column.id} className={`w-80 flex flex-col h-full rounded-3xl border p-4 ${COLOR_MAP[column.color || "slate"]}`}>
-                  <div className="flex items-center justify-between mb-4 px-2">
-                    <h3 
-                        className={`font-black text-sm uppercase tracking-widest truncate transition-colors ${LABEL_MAP[column.color || "slate"]} ${!isReadOnly ? 'cursor-pointer hover:opacity-75' : ''}`}
-                        onClick={() => {
-                            if (isReadOnly) return;
-                            setEditingColumn({ id: column.id, name: column.name });
-                            setShowColumnDialog(true);
-                        }}
-                    >
-                      {column.name} <span className="ml-2 text-slate-400 font-bold">{column.tasks.length}</span>
-                    </h3>
-                    {!isClient && (
-                      <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
-                          onClick={() => {
-                              setActiveColumnId(column.id);
-                              setShowTaskDialog(true);
-                          }}
-                      >
-                        <Plus size={18} />
-                      </Button>
-                    )}
-                  </div>
-
-                  <Droppable droppableId={column.id} isDropDisabled={isReadOnly}>
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
-                      >
-                        {column.tasks.map((task, index) => (
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isReadOnly}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`
-                                  bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-primary/20 
-                                  hover:shadow-md transition-all group
-                                  ${snapshot.isDragging ? 'shadow-xl border-primary scale-[1.02] rotate-2' : ''}
-                                `}
-                              >
-                                <h4 className="font-bold text-slate-800 mb-2 leading-snug">{task.title}</h4>
-                                {task.description && (
-                                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
-                                    {task.description}
-                                  </p>
-                                )}
-                                <div className="flex items-center justify-between">
-                                  <div className="flex -space-x-1">
-                                      <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
-                                          <User size={12} className="text-primary" />
-                                      </div>
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase text-slate-400">#TK-{task.id.slice(0,4)}</span>
-                                </div>
+            <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN" isDropDisabled={isReadOnly}>
+              {(provided) => (
+                <div 
+                  className="flex gap-6 h-full min-w-max"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {columns.map((column, index) => (
+                    <Draggable key={column.id} draggableId={column.id} index={index} isDragDisabled={isReadOnly}>
+                      {(provided, snapshot) => (
+                        <div 
+                          ref={provided.innerRef} 
+                          {...provided.draggableProps}
+                          className={`w-80 flex flex-col h-full rounded-2xl border p-4 ${COLOR_MAP[column.color || "slate"]} ${snapshot.isDragging ? 'shadow-2xl scale-[1.02] rotate-1 z-50' : ''}`}
+                        >
+                          <div 
+                            {...provided.dragHandleProps}
+                            className={`flex items-center justify-between mb-4 px-2 ${!isReadOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                          >
+                            <h3 
+                                className={`font-black text-sm uppercase tracking-widest truncate transition-colors ${LABEL_MAP[column.color || "slate"]} ${!isReadOnly ? 'hover:opacity-75' : ''}`}
+                                onClick={() => {
+                                    if (isReadOnly) return;
+                                    setEditingColumn({ id: column.id, name: column.name });
+                                    setShowColumnDialog(true);
+                                }}
+                            >
+                              {column.name} <span className="ml-2 text-slate-400 font-bold">{column.tasks.length}</span>
+                            </h3>
+                            {!isClient && (
+                              <div className="flex items-center">
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white/50"
+                                    onClick={() => handleDeleteColumn(column.id)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
+                                    onClick={() => {
+                                        setActiveColumnId(column.id);
+                                        setShowTaskDialog(true);
+                                    }}
+                                >
+                                  <Plus size={18} />
+                                </Button>
                               </div>
                             )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              ))}
+                          </div>
 
-              {/* Add Column Button */}
-              {!isReadOnly && activeMilestone && (
-                <div className="w-80 shrink-0">
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-16 rounded-3xl border-dashed border-2 bg-transparent hover:bg-white text-slate-500 hover:text-primary font-bold transition-all shadow-sm"
-                    onClick={() => setShowCreateColumnDialog(true)}
-                  >
-                    <Plus size={18} className="mr-2" /> Add Container
-                  </Button>
+                          <Droppable droppableId={column.id} isDropDisabled={isReadOnly}>
+                            {(provided) => (
+                              <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
+                              >
+                                {column.tasks.map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isReadOnly}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`
+                                          bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-slate-300 
+                                          hover:shadow transition-all group cursor-grab active:cursor-grabbing
+                                          ${snapshot.isDragging ? 'shadow-lg border-primary ring-2 ring-primary/10 scale-[1.02] rotate-1' : ''}
+                                        `}
+                                      >
+                                        <h4 className="font-bold text-slate-800 mb-2 leading-snug">{task.title}</h4>
+                                        {task.description && (
+                                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                                            {task.description}
+                                          </p>
+                                        )}
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex -space-x-1">
+                                              <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
+                                                  <User size={12} className="text-primary" />
+                                              </div>
+                                          </div>
+                                          <span className="text-[10px] font-black uppercase text-slate-400">#TK-{task.id.slice(0,4)}</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+
+                  {/* Add Column Button */}
+                  {!isReadOnly && activeMilestone && (
+                    <div className="w-80 shrink-0">
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-16 rounded-2xl border-dashed border-2 bg-transparent hover:bg-slate-100 text-slate-500 hover:text-primary font-bold transition-all shadow-sm"
+                        onClick={() => setShowCreateColumnDialog(true)}
+                      >
+                        <Plus size={18} className="mr-2" /> Add Container
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </Droppable>
           </DragDropContext>
           </div>
         </div>
