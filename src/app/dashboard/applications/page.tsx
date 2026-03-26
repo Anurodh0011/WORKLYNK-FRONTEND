@@ -92,6 +92,9 @@ export default function MyApplicationsPage() {
                          {app.contract && app.contract.status === "ACTIVE" && (
                            <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 text-white border-0"><Briefcase size={12} /> Active</Badge>
                          )}
+                         {app.contract && app.contract.status === "COMPLETED" && (
+                           <Badge className="bg-green-500 hover:bg-green-600 gap-1 text-white border-0"><CheckCircle2 size={12} /> Completed</Badge>
+                         )}
                          <span className="text-[10px] text-muted-foreground font-medium w-full sm:w-auto mt-1 sm:mt-0">Applied on {new Date(app.createdAt).toLocaleDateString()}</span>
                       </div>
                       <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-1">
@@ -121,6 +124,12 @@ export default function MyApplicationsPage() {
                          <Link href={`/contracts/${app.contract.id}/board`} className="w-full md:w-auto">
                           <Button className="w-full gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20 font-bold px-6">
                             Project Board <ChevronRight size={16} />
+                          </Button>
+                        </Link>
+                      ) : app.contract && app.contract.status === "COMPLETED" ? (
+                         <Link href={`/contracts/${app.contract.id}/board`} className="w-full md:w-auto">
+                          <Button className="w-full gap-2 rounded-xl bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-500/20 font-bold px-6">
+                            View Completed Board <CheckCircle2 size={16} />
                           </Button>
                         </Link>
                       ) : (

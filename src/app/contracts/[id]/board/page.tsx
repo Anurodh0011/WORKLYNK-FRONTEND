@@ -104,6 +104,10 @@ export default function BoardPage() {
     }
   }, [data, selectedMilestoneId]);
 
+  // Determine if this is the final milestone to be paid
+  const pendingMilestonesCount = milestones.filter(m => m.status !== "PAID").length;
+  const isFinalPayment = activeMilestone?.status === "IN_REVIEW" && pendingMilestonesCount === 1;
+
   const onDragEnd = async (result: DropResult) => {
     if (isReadOnly) return;
 
@@ -342,7 +346,9 @@ export default function BoardPage() {
                       className="ml-4 rounded-xl shadow-sm text-xs font-bold"
                       onClick={() => setShowMilestoneDialog(true)}
                     >
-                      {isClient ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") : (activeMilestone.status === "PENDING" ? "Submit Work" : "View Feedback")}
+                      {isClient 
+                        ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") 
+                        : (activeMilestone.status === "PENDING" ? (activeMilestone.clientFeedback ? "Re-Submit Work" : "Submit Work") : "View Feedback")}
                     </Button>
                  </div>
                ) : (
@@ -588,7 +594,7 @@ export default function BoardPage() {
         <DialogContent className="rounded-3xl max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
-               {isClient ? (activeMilestone?.status === "IN_REVIEW" ? "Provide Milestone Feedback" : "Milestone Details") : "Milestone Completion"}
+               {isClient ? (activeMilestone?.status === "IN_REVIEW" ? "Provide Milestone Feedback" : "Milestone Details") : (activeMilestone?.status === "PENDING" && activeMilestone?.clientFeedback ? "Resubmit Milestone" : "Milestone Completion")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 px-2">
@@ -620,9 +626,11 @@ export default function BoardPage() {
             {/* Inputs based on Role and Status */}
             {!isClient && activeMilestone?.status === "PENDING" && (
               <div className="space-y-2 mt-4">
-                <Label className="font-bold">Add Notes for Client (Optional)</Label>
+                <Label className="font-bold">
+                  {activeMilestone.clientFeedback ? "Explanation of Corrections (Optional)" : "Add Notes for Client (Optional)"}
+                </Label>
                 <Textarea 
-                  placeholder="Describe what was completed..." 
+                  placeholder={activeMilestone.clientFeedback ? "Detail the changes you made based on the feedback..." : "Describe what was completed..."} 
                   value={milestoneNotes}
                   onChange={(e) => setMilestoneNotes(e.target.value)}
                   className="rounded-xl border-slate-200 focus:ring-primary/20"
@@ -649,9 +657,10 @@ export default function BoardPage() {
             {!isClient && activeMilestone?.status === "PENDING" && (
                 <Button 
                     onClick={handleSubmitMilestone} 
-                    className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
+                    className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20 flex items-center gap-2"
                 >
-                  Submit for Review
+                  <CheckCircle2 size={16} />
+                  {activeMilestone.clientFeedback ? "Resubmit for Review" : "Submit for Review"}
                 </Button>
             )}
 
@@ -668,7 +677,7 @@ export default function BoardPage() {
                       onClick={() => handleReviewMilestone("PAID")} 
                       className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
                   >
-                    Approve & Pay
+                    {isFinalPayment ? "Approve & Complete Project" : "Approve & Pay"}
                   </Button>
                 </>
             )}

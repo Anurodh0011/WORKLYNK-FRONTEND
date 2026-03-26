@@ -204,6 +204,12 @@ export default function ClientProjectsPage() {
                               Project Board <Briefcase size={16} />
                             </Button>
                           </Link>
+                        ) : project.contracts?.[0]?.status === "COMPLETED" || project.status === "COMPLETED" ? (
+                           <Link href={`/contracts/${project.contracts?.[0]?.id}/board`} className="flex-1 md:flex-none">
+                            <Button variant="outline" className="w-full gap-2 rounded-xl border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700 transition-all">
+                              View Completed Project <CheckCircle2 size={16} />
+                            </Button>
+                          </Link>
                         ) : (
                           <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
                             <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
