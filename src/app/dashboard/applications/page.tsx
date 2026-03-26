@@ -14,7 +14,8 @@ import {
   IndianRupee,
   ChevronRight,
   ExternalLink,
-  FileText
+  FileText,
+  ShieldCheck
 } from "lucide-react";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Card, CardContent } from "@/src/app/components/ui/card";
@@ -81,6 +82,12 @@ export default function MyApplicationsPage() {
                          {getStatusBadge(app.status)}
                          {app.contract && app.contract.status === "PENDING_FREELANCER" && (
                            <Badge className="bg-amber-500 hover:bg-amber-600 gap-1 text-white border-0"><FileText size={12} /> Contract Received</Badge>
+                         )}
+                         {app.contract && app.contract.status === "DRAFT" && app.contract.remarks && (
+                           <Badge className="bg-orange-500 hover:bg-orange-600 gap-1 text-white border-0"><AlertCircle size={12} /> Changes Requested</Badge>
+                         )}
+                         {app.contract && app.contract.status === "DRAFT" && !app.contract.remarks && (
+                           <Badge className="bg-slate-500 hover:bg-slate-600 gap-1 text-white border-0"><ShieldCheck size={12} /> Drafted</Badge>
                          )}
                          {app.contract && app.contract.status === "ACTIVE" && (
                            <Badge className="bg-blue-500 hover:bg-blue-600 gap-1 text-white border-0"><Briefcase size={12} /> Active</Badge>

@@ -19,7 +19,9 @@ import {
   ArrowLeft,
   ChevronRight,
   ShieldCheck,
-  Star
+  Star,
+  AlertCircle,
+  FileText
 } from "lucide-react";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Button } from "@/src/app/components/ui/button";
@@ -97,16 +99,22 @@ export default function ProjectApplicationsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, contract?: any) => {
     switch (status) {
       case "ACCEPTED":
-        return <Badge className="bg-green-500">Accepted</Badge>;
+        if (contract) {
+          if (contract.status === "ACTIVE") return <Badge className="bg-blue-500 hover:bg-blue-600 gap-1"><Briefcase size={12} /> Active</Badge>;
+          if (contract.status === "PENDING_FREELANCER") return <Badge className="bg-amber-500 hover:bg-amber-600 gap-1"><FileText size={12} /> Contract Sent</Badge>;
+          if (contract.status === "DRAFT" && contract.remarks) return <Badge className="bg-orange-500 hover:bg-orange-600 gap-1"><AlertCircle size={12} /> Changes Requested</Badge>;
+          if (contract.status === "DRAFT") return <Badge className="bg-slate-500 hover:bg-slate-600 gap-1"><ShieldCheck size={12} /> Drafted</Badge>;
+        }
+        return <Badge className="bg-green-500 hover:bg-green-600 gap-1"><CheckCircle2 size={12} /> Accepted</Badge>;
       case "REJECTED":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return <Badge variant="destructive" className="gap-1"><XCircle size={12} /> Rejected</Badge>;
       case "WITHDRAWN":
-        return <Badge variant="secondary">Withdrawn</Badge>;
+        return <Badge variant="secondary" className="gap-1"><AlertCircle size={12} /> Withdrawn</Badge>;
       default:
-        return <Badge variant="outline" className="text-primary border-primary">Pending</Badge>;
+        return <Badge variant="outline" className="text-primary border-primary gap-1"><Clock size={12} /> Pending</Badge>;
     }
   };
 
@@ -185,7 +193,7 @@ export default function ProjectApplicationsPage() {
                               4.8 (24 Reviews)
                            </div>
                            <div className="ml-auto">
-                              {getStatusBadge(app.status)}
+                              {getStatusBadge(app.status, app.contract)}
                            </div>
                         </div>
                       </div>
@@ -261,6 +269,34 @@ export default function ProjectApplicationsPage() {
                           >
                             Reject
                           </Button>
+                        </div>
+                      )}
+
+                      {selectedApp.status === "ACCEPTED" && selectedApp.contract && (
+                        <div className="pt-4 flex flex-col gap-3">
+                          {selectedApp.contract.status === "PENDING_FREELANCER" && (
+                            <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                              <p className="text-sm text-amber-800 font-bold flex items-center gap-2"><Clock size={16} /> Awaiting Freelancer Signature</p>
+                              <p className="text-xs text-amber-700 mt-1">Contract was sent to the freelancer.</p>
+                            </div>
+                          )}
+                          {selectedApp.contract.status === "DRAFT" && selectedApp.contract.remarks && (
+                            <div className="bg-orange-50 p-3 rounded-xl border border-orange-200">
+                              <p className="text-sm text-orange-800 font-bold flex items-center gap-2"><AlertCircle size={16} /> Changes Requested</p>
+                              <p className="text-xs text-orange-700 mt-1 whitespace-pre-wrap">{selectedApp.contract.remarks}</p>
+                            </div>
+                          )}
+                          {selectedApp.contract.status === "ACTIVE" && (
+                            <div className="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                              <p className="text-sm text-blue-800 font-bold flex items-center gap-2"><CheckCircle2 size={16} /> Active Contract</p>
+                              <p className="text-xs text-blue-700 mt-1">Both parties have agreed to the contract.</p>
+                            </div>
+                          )}
+                          <Link href={selectedApp.contract.status === "ACTIVE" ? `/contracts/${selectedApp.contract.id}/board` : `/contracts/${selectedApp.contract.id}/edit`}>
+                            <Button className="w-full h-11 rounded-xl shadow-lg mt-2 font-bold bg-primary hover:bg-primary/90">
+                              {selectedApp.contract.status === "ACTIVE" ? "Go to Workspace" : selectedApp.contract.status === "DRAFT" ? "Edit Contract" : "View Contract"}
+                            </Button>
+                          </Link>
                         </div>
                       )}
 
