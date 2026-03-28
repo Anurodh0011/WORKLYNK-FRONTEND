@@ -12,12 +12,24 @@ import {
   CheckCircle2,
   Clock,
   IndianRupee,
-  ChevronRight
+  ChevronRight,
+  MoreVertical,
+  LayoutTemplate,
+  FileText,
+  User
 } from "lucide-react";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Card, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/src/app/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/src/app/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
+import { toast } from "sonner";
 import Link from "next/link";
 
 export default function PortfolioPage() {
@@ -28,6 +40,7 @@ export default function PortfolioPage() {
   );
 
   const [activeTab, setActiveTab] = useState("All");
+  const [selectedProposalForView, setSelectedProposalForView] = useState<any>(null);
   
   const allContracts = data?.data || [];
   
@@ -99,6 +112,30 @@ export default function PortfolioPage() {
                     <div className="p-6 flex-1 flex flex-col">
                       <div className="flex items-center justify-between mb-4">
                         {getStatusBadge(contract.status)}
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted/50 rounded-full transition-colors">
+                              <MoreVertical size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                            <DropdownMenuItem onClick={() => setSelectedProposalForView(contract)} className="cursor-pointer gap-2 text-sm font-medium p-2">
+                              <LayoutTemplate size={14} className="text-muted-foreground"/> View Proposal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className="cursor-pointer gap-2 text-sm font-medium p-2">
+                              <Link href={`/contracts/${contract.id}/view`} className="w-full flex items-center">
+                                <FileText size={14} className="text-muted-foreground mr-2"/> View Contract
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="cursor-pointer gap-2 text-sm font-medium p-2" 
+                              onClick={() => toast.info(`${user?.role === "FREELANCER" ? "Client" : "Freelancer"} public profiles are currently in development!`)}
+                            >
+                              <User size={14} className="text-muted-foreground"/> View {user?.role === "FREELANCER" ? "Client" : "Freelancer"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       <h3 className="text-xl font-black text-slate-800 tracking-tight leading-snug group-hover:text-primary transition-colors mb-3">
                         {contract.project?.title || "Project"}
@@ -129,6 +166,39 @@ export default function PortfolioPage() {
           )}
         </Tabs>
       </div>
+
+      {/* View Proposal Modal */}
+      <Dialog open={!!selectedProposalForView} onOpenChange={() => setSelectedProposalForView(null)}>
+        <DialogContent className="rounded-3xl max-w-2xl px-4 sm:px-8 py-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight mb-2">Original Proposal</DialogTitle>
+            <div className="flex items-center gap-2 mb-4">
+               {selectedProposalForView && getStatusBadge(selectedProposalForView.status)}
+            </div>
+          </DialogHeader>
+          {selectedProposalForView && (
+            <div className="space-y-6">
+               <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                 <h4 className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">Project</h4>
+                 <p className="text-lg font-bold text-slate-800 truncate">{selectedProposalForView.project?.title}</p>
+                 <div className="flex items-center gap-4 flex-wrap text-sm font-bold text-slate-600 mt-4">
+                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><IndianRupee size={16} className="text-primary" /> Agreed Bid: {selectedProposalForView.totalAmount}</span>
+                 </div>
+               </div>
+               
+               <div className="bg-primary/5 border border-primary/10 p-6 rounded-3xl">
+                 <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-4 uppercase tracking-widest"><FileText size={16} /> Proposal Details</h4>
+                 <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">
+                   {selectedProposalForView.description || "No specific proposal tracking data attached natively to this contract description."}
+                 </div>
+               </div>
+            </div>
+          )}
+          <DialogFooter className="mt-6 border-t border-slate-100 pt-4">
+            <Button variant="outline" className="rounded-xl w-full h-12 font-bold" onClick={() => setSelectedProposalForView(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BaseLayout>
   );
 }
