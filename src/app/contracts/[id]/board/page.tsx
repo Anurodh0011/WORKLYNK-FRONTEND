@@ -444,6 +444,15 @@ export default function BoardPage() {
                         ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") 
                         : (activeMilestone.status === "PENDING" ? (activeMilestone.clientFeedback ? "Re-Submit Work" : "Submit Work") : "View Feedback")}
                     </Button>
+                    {!isClient && pendingMilestonesCount === 0 && data?.data?.contract?.status === "ACTIVE" && (
+                       <Button
+                          size="sm"
+                          onClick={handleCompleteProject}
+                          className="ml-2 bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20 text-white font-bold rounded-xl text-xs"
+                       >
+                         Complete Project
+                       </Button>
+                    )}
                  </div>
                ) : (
                   <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
@@ -771,7 +780,7 @@ export default function BoardPage() {
                       onClick={() => handleReviewMilestone("PAID")} 
                       className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
                   >
-                    {isFinalPayment ? "Approve & Complete Project" : "Approve & Pay"}
+                    Approve & Pay
                   </Button>
                 </>
             )}
