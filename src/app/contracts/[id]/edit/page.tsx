@@ -34,12 +34,14 @@ export default function ContractEditPage() {
   );
 
   const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (data?.data) {
       setDescription(data.data.description || "");
+      setStartDate(data.data.startDate ? data.data.startDate.split('T')[0] : "");
       if (data.data.milestones && data.data.milestones.length > 0) {
         setMilestones(data.data.milestones.map((m: any) => ({
           ...m,
@@ -74,6 +76,11 @@ export default function ContractEditPage() {
       return;
     }
 
+    if (!startDate) {
+      toast.error("Please provide a Project Start Date");
+      return;
+    }
+
     if (milestones.length === 0) {
       toast.error("Please add at least one milestone");
       return;
@@ -88,7 +95,7 @@ export default function ContractEditPage() {
     try {
       // 1. Update Terms
       const updateResponse = await mutationFetcher(`${API_BASE_URL}/contracts/${contractId}`, {
-        arg: { description, milestones },
+        arg: { description, milestones, startDate },
         method: "PATCH"
       } as any);
 
@@ -203,6 +210,20 @@ export default function ContractEditPage() {
                 <CardDescription>Scope of work and general terms</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate" className="text-sm font-bold">Project Start Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <Input 
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="pl-10 rounded-xl border-border/50 focus:ring-primary/20 max-w-sm"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground px-1">When the project is officially scheduled to begin.</p>
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-bold">Contract Description & Terms</Label>
                   <Textarea 
