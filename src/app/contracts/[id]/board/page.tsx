@@ -14,7 +14,7 @@ import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
-import { Plus, MoreVertical, Edit2, Trash2, GripVertical, FileText, Calendar, User, CheckCircle2, AlertCircle, IndianRupee } from "lucide-react";
+import { Plus, MoreVertical, Edit2, Trash2, GripVertical, FileText, Calendar, User, CheckCircle2, AlertCircle, IndianRupee, Star, Send, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 interface Task {
@@ -53,8 +53,9 @@ const LABEL_MAP: any = {
 export default function BoardPage() {
   const params = useParams();
   const contractId = params.id;
-  const { user }: any = useAuthContext();
+  const { user, token }: any = useAuthContext();
   const isClient = user?.role === "CLIENT";
+  const isFreelancer = user?.role === "FREELANCER";
 
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
 
@@ -81,6 +82,13 @@ export default function BoardPage() {
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
   const [milestoneNotes, setMilestoneNotes] = useState("");
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
+
+  // Review states
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
 
   const isReadOnly = isClient || activeMilestone?.status === "PAID" || activeMilestone?.status === "IN_REVIEW";
 
@@ -287,6 +295,69 @@ export default function BoardPage() {
     }
   };
 
+  const handleCompleteProject = async () => {
+    // Determine if we can complete: All milestones must be PAID
+    const allPaid = milestones.every(m => m.status === "PAID");
+    if (!allPaid) {
+      toast.error("All milestones must be paid before completing the project.");
+      return;
+    }
+    
+    // Show the review dialog first
+    setShowReviewDialog(true);
+  };
+
+  const submitReviewAndComplete = async () => {
+    if (rating === 0) {
+      toast.error("Please provide a star rating.");
+      return;
+    }
+
+    setIsCompleting(true);
+    try {
+      // 1. Mark project/contract as completed (Freelancer trigger)
+      const completeRes = await fetch(`${API_BASE_URL}/contracts/${contractId}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const completeData = await completeRes.json();
+
+      if (!completeData.success) {
+        throw new Error(completeData.message || "Failed to complete project");
+      }
+
+      // 2. Submit the review
+      // Note: We'll implement the backend for this in Phase 2, but we'll try to call it now
+      await fetch(`${API_BASE_URL}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          contractId,
+          rating,
+          comment: reviewComment
+        })
+      });
+
+      toast.success("Project marked as completed! Review submitted.");
+      
+      // Redirect with success message
+      setTimeout(() => {
+        window.location.href = isFreelancer ? "/dashboard/contracts?success=completed" : "/dashboard/projects?success=completed";
+      }, 1500);
+
+    } catch (err: any) {
+      toast.error(err.message || "System error during completion");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   if (isLoading) return <BaseLayout><div className="p-20 text-center">Loading board...</div></BaseLayout>;
 
   return (
@@ -318,6 +389,19 @@ export default function BoardPage() {
               </div>
             ))}
           </div>
+
+          {/* Completion Action Footer */}
+          {isFreelancer && milestones.length > 0 && milestones.every(m => m.status === "PAID") && (
+            <div className="p-4 border-t border-slate-100 bg-white">
+               <Button 
+                onClick={handleCompleteProject}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-6 rounded-2xl shadow-lg shadow-green-500/20 group animate-pulse hover:animate-none"
+               >
+                 <CheckCircle2 className="mr-2 group-hover:scale-110 transition-transform" />
+                 MARK COMPLETED
+               </Button>
+            </div>
+          )}
         </div>
 
         {/* Main Board Area */}
@@ -701,6 +785,95 @@ export default function BoardPage() {
           background: #94a3b8;
         }
       `}</style>
+
+      {/* Project Review & Rating Modal */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="rounded-[2.5rem] max-w-xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-gradient-to-br from-primary to-primary-foreground p-12 text-center text-white relative">
+            <div className="absolute top-4 right-4 text-white/40 font-black text-6xl select-none opacity-20">FINISH</div>
+            <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl mx-auto mb-6 flex items-center justify-center border border-white/30 shadow-2xl rotate-3">
+              <Trophy size={48} className="text-white drop-shadow-lg" />
+            </div>
+            <h2 className="text-4xl font-black tracking-tighter mb-2">Project Completed!</h2>
+            <p className="text-white/80 font-medium">How was your experience working with the {isFreelancer ? 'Client' : 'Freelancer'}?</p>
+          </div>
+          
+          <div className="p-10 bg-white">
+            <div className="space-y-8">
+              {/* Star Rating */}
+              <div className="text-center">
+                <Label className="font-black text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6 block">Overall Satisfaction</Label>
+                <div className="flex justify-center gap-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setRating(star)}
+                      className="transition-all duration-200 hover:scale-125 active:scale-95 group focus:outline-none"
+                    >
+                      <Star
+                        size={48}
+                        className={`transition-all duration-300 ${
+                          (hoverRating || rating) >= star
+                            ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                            : "text-slate-200 group-hover:text-amber-200"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <div className="h-6 mt-3">
+                    {rating > 0 && (
+                        <p className="text-amber-600 font-black text-sm uppercase tracking-widest animate-in fade-in slide-in-from-bottom-1">
+                            {rating === 5 ? "Incredible!" : rating === 4 ? "Great Work!" : rating === 3 ? "Satisfactory" : rating === 2 ? "Needs Improvement" : "Poor Experience"}
+                        </p>
+                    )}
+                </div>
+              </div>
+
+              {/* Review Text */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                    <Label className="font-black text-xs uppercase tracking-widest text-slate-500">Share your feedback</Label>
+                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold text-slate-400 italic">Optional but helpful</span>
+                </div>
+                <Textarea
+                  placeholder={`Tell us what was best about working with this ${isFreelancer ? 'client' : 'freelancer'}...`}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  className="min-h-[120px] rounded-3xl border-slate-100 bg-slate-50/50 p-6 focus:ring-primary/20 transition-all font-medium text-slate-700 placeholder:text-slate-400"
+                />
+              </div>
+
+              <Button
+                onClick={submitReviewAndComplete}
+                disabled={isCompleting || rating === 0}
+                className="w-full h-16 rounded-3xl font-black text-lg tracking-tight bg-primary shadow-xl shadow-primary/30 hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 group"
+              >
+                {isCompleting ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Finishing...
+                    </div>
+                ) : (
+                    <>
+                        Complete & Share Feedback
+                        <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </>
+                )}
+              </Button>
+
+              <button 
+                onClick={() => setShowReviewDialog(false)}
+                className="w-full text-center text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors py-2"
+              >
+                Go back to board
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </BaseLayout>
   );
 }
