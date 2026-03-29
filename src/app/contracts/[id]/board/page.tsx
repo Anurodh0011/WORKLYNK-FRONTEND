@@ -111,6 +111,15 @@ export default function BoardPage() {
       }
     }
   }, [data, selectedMilestoneId]);
+114: 
+115:   // Detect if project is completed and needs review (for both roles)
+116:   useEffect(() => {
+117:     if (data?.data?.contract?.status === "COMPLETED" && !isLoading) {
+118:         // We should check if user has already reviewed, 
+119:         // but for now we'll just show the dialog if it's COMPLETED
+120:         setShowReviewDialog(true);
+121:     }
+122:   }, [data, isLoading]);
 
   // Determine if this is the final milestone to be paid
   const pendingMilestonesCount = milestones.filter(m => m.status !== "PAID").length;
@@ -315,18 +324,19 @@ export default function BoardPage() {
 
     setIsCompleting(true);
     try {
-      // 1. Mark project/contract as completed (Freelancer trigger)
-      const completeRes = await fetch(`${API_BASE_URL}/contracts/${contractId}/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const completeData = await completeRes.json();
+      if (isFreelancer && data?.data?.contract?.status !== "COMPLETED") {
+        const completeRes = await fetch(`${API_BASE_URL}/contracts/${contractId}/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const completeData = await completeRes.json();
 
-      if (!completeData.success) {
-        throw new Error(completeData.message || "Failed to complete project");
+        if (!completeData.success) {
+          throw new Error(completeData.message || "Failed to complete project");
+        }
       }
 
       // 2. Submit the review
