@@ -22,7 +22,10 @@ import { Card, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import Link from "next/link";
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
+
 export default function MyApplicationsPage() {
+  const [selectedApp, setSelectedApp] = React.useState<any>(null);
   const { data, error, isLoading } = useSWR(
     `${API_BASE_URL}/applications/my-applications`,
     baseFetcher
@@ -77,7 +80,7 @@ export default function MyApplicationsPage() {
               <Card key={app.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 cursor-pointer group/link" onClick={() => setSelectedApp(app)}>
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                          {getStatusBadge(app.status)}
                          {app.contract && app.contract.status === "PENDING_FREELANCER" && (
@@ -97,17 +100,17 @@ export default function MyApplicationsPage() {
                          )}
                          <span className="text-[10px] text-muted-foreground font-medium w-full sm:w-auto mt-1 sm:mt-0">Applied on {new Date(app.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-1">
+                      <h3 className="text-lg font-bold group-hover/link:text-primary transition-colors truncate mb-1">
                         {app.project.title}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-2">
+                        <span className="flex items-center gap-1 font-medium bg-muted px-2 py-1 rounded">
                           <IndianRupee size={12} /> {app.bidAmount}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 font-medium bg-muted px-2 py-1 rounded">
                           <Clock size={12} /> {app.estimatedDays} days
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 font-medium bg-muted px-2 py-1 rounded text-primary">
                            {app.project.budgetType} Budget
                         </span>
                       </div>
@@ -147,6 +150,40 @@ export default function MyApplicationsPage() {
           </div>
         )}
       </div>
+      
+      <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
+        <DialogContent className="rounded-3xl max-w-2xl px-4 sm:px-8 py-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight mb-2">My Proposal</DialogTitle>
+            <div className="flex items-center gap-2 mb-4">
+               {selectedApp && getStatusBadge(selectedApp.status)}
+               <span className="text-xs text-muted-foreground font-medium">Applied on {selectedApp && new Date(selectedApp.createdAt).toLocaleDateString()}</span>
+            </div>
+          </DialogHeader>
+          {selectedApp && (
+            <div className="space-y-6">
+               <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                 <h4 className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">Project Target</h4>
+                 <p className="text-lg font-bold text-slate-800 truncate">{selectedApp.project.title}</p>
+                 <div className="flex items-center gap-4 flex-wrap text-sm font-bold text-slate-600 mt-4">
+                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><IndianRupee size={16} className="text-primary" /> Bid: {selectedApp.bidAmount}</span>
+                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><Clock size={16} className="text-primary" /> Duration: {selectedApp.estimatedDays} days</span>
+                 </div>
+               </div>
+               
+               <div className="bg-primary/5 border border-primary/10 p-6 rounded-3xl">
+                 <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-4 uppercase tracking-widest"><FileText size={16} /> Cover Letter / Proposal</h4>
+                 <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">
+                   {selectedApp.proposal}
+                 </div>
+               </div>
+            </div>
+          )}
+          <DialogFooter className="mt-6 border-t border-slate-100 pt-4">
+            <Button variant="outline" className="rounded-xl w-full h-12 font-bold" onClick={() => setSelectedApp(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BaseLayout>
   );
 }

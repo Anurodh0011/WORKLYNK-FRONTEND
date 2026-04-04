@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Bookmark,
   Users,
-  FileText
+  FileText,
+  Globe
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -117,6 +118,12 @@ export function Navbar() {
           >
             <Users className="mr-1 h-4 w-4" /> Saved
           </Link>
+          <Link
+            href="/portfolio"
+            className="hover:text-secondary flex items-center gap-1"
+          >
+            <Globe className="mr-1 h-4 w-4" /> Portfolio
+          </Link>
         </>
       );
     }
@@ -147,6 +154,12 @@ export function Navbar() {
             className="hover:text-secondary flex items-center gap-1"
           >
             <Bookmark className="mr-1 h-4 w-4" /> Saved
+          </Link>
+          <Link
+            href="/portfolio"
+            className="hover:text-secondary flex items-center gap-1"
+          >
+            <Globe className="mr-1 h-4 w-4" /> Portfolio
           </Link>
         </>
       );

@@ -311,7 +311,7 @@ export default function BoardPage() {
       toast.error("All milestones must be paid before completing the project.");
       return;
     }
-    
+
     // Show the review dialog first
     setShowReviewDialog(true);
   };
@@ -325,14 +325,10 @@ export default function BoardPage() {
     setIsCompleting(true);
     try {
       if (isFreelancer && data?.data?.contract?.status !== "COMPLETED") {
-        const completeRes = await fetch(`${API_BASE_URL}/contracts/${contractId}/complete`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        });
-        const completeData = await completeRes.json();
+        const completeData = await mutationFetcher(
+          `${API_BASE_URL}/contracts/${contractId}/complete`,
+          { arg: {} } as any,
+        );
 
         if (!completeData.success) {
           throw new Error(completeData.message || "Failed to complete project");
@@ -340,22 +336,16 @@ export default function BoardPage() {
       }
 
       // 2. Submit the review
-      // Note: We'll implement the backend for this in Phase 2, but we'll try to call it now
-      await fetch(`${API_BASE_URL}/reviews`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
+      await mutationFetcher(`${API_BASE_URL}/reviews`, {
+        arg: {
           contractId,
           rating,
-          comment: reviewComment
-        })
-      });
+          comment: reviewComment,
+        },
+      } as any);
 
       toast.success("Project marked as completed! Review submitted.");
-      
+
       // Redirect with success message
       setTimeout(() => {
         window.location.href = isFreelancer ? "/dashboard/contracts?success=completed" : "/dashboard/projects?success=completed";

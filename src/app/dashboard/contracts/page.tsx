@@ -108,12 +108,12 @@ export default function MyContractsPage() {
                 <Card key={contract.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                      <div className="flex-1 min-w-0">
+                      <Link href={`/contracts/${contract.id}/view`} className="flex-1 min-w-0 group/link block">
                         <div className="flex items-center gap-2 mb-2">
                            {getStatusBadge(contract.status)}
                            <span className="text-[10px] text-muted-foreground font-medium">Updated on {new Date(contract.updatedAt || contract.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-1">
+                        <h3 className="text-lg font-bold group-hover/link:text-primary transition-colors truncate mb-1">
                           {contract.project?.title || "Project"}
                         </h3>
                         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-2">
@@ -121,7 +121,7 @@ export default function MyContractsPage() {
                              {isFreelancer ? `Client: ${contract.client?.name}` : `Freelancer: ${contract.freelancer?.name}`}
                           </span>
                         </div>
-                      </div>
+                      </Link>
 
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
                         {contract.status === "ACTIVE" ? (
