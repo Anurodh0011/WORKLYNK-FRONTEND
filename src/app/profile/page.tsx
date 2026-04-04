@@ -11,7 +11,7 @@ import { Label } from "@/src/app/components/ui/label";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
-import { Camera, CheckCircle, XCircle, Clock, ShieldCheck, MapPin, Briefcase, GraduationCap, Award, Globe, Edit3 } from "lucide-react";
+import { Camera, CheckCircle, XCircle, Clock, ShieldCheck, MapPin, Briefcase, GraduationCap, Award, Globe, Edit3, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/app/components/ui/tabs";
 import { Badge } from "@/src/app/components/ui/badge";
 
@@ -169,7 +169,7 @@ export default function ProfilePage() {
             <Tabs defaultValue={user.role === "FREELANCER" ? "profile" : "settings"} className="w-full">
               <div className="flex justify-between items-center mb-6">
                 <TabsList>
-                  {user.role === "FREELANCER" && <TabsTrigger value="profile">Public Profile</TabsTrigger>}
+                  <TabsTrigger value="profile">{user.role === "FREELANCER" ? "Public Profile" : "My Project History"}</TabsTrigger>
                   <TabsTrigger value="settings">Settings & Verification</TabsTrigger>
                 </TabsList>
                 {user.role === "FREELANCER" && (
@@ -179,11 +179,10 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* PUBLIC PROFILE TAB for Freelancers */}
-              {user.role === "FREELANCER" && (
-                <TabsContent value="profile" className="space-y-6 mt-0">
-                  <Card>
-                    <CardHeader className="pb-4 border-b">
+              {/* PUBLIC PROFILE TAB for Freelancers and Clients */}
+              <TabsContent value="profile" className="space-y-6 mt-0">
+                <Card>
+                  <CardHeader className="pb-4 border-b">
                       <div>
                         <h2 className="text-2xl font-bold">{user.name}</h2>
                         {profile?.headline && <p className="text-lg text-muted-foreground mt-1">{profile.headline}</p>}
@@ -254,8 +253,8 @@ export default function ProfilePage() {
                       </CardContent>
                     )}
                     {profile?.portfolio && profile.portfolio.length > 0 && (
-                      <CardContent className="pt-6">
-                         <h3 className="font-semibold mb-4 flex items-center gap-2"><Globe size={18} /> Portfolio Projects</h3>
+                      <CardContent className="pt-6 border-b">
+                         <h3 className="font-semibold mb-4 flex items-center gap-2"><Globe size={18} /> External Portfolio</h3>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                            {profile.portfolio.map((port: any, i: number) => (
                              <div key={i} className="border p-4 rounded-lg bg-slate-50">
@@ -266,9 +265,27 @@ export default function ProfilePage() {
                          </div>
                       </CardContent>
                     )}
+
+                    {/* Platform Portfolio (Clients and Freelancers) */}
+                    {(profile?.user?.freelancerContracts?.length > 0 || profile?.user?.clientContracts?.length > 0) && (
+                      <CardContent className="pt-6">
+                         <h3 className="font-semibold mb-4 flex items-center gap-2 text-primary"><Briefcase size={18} /> Platform Portfolio</h3>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           {(user.role === "FREELANCER" ? profile.user.freelancerContracts : profile.user.clientContracts).map((port: any, i: number) => (
+                             <div key={i} className="border p-4 rounded-lg bg-primary/5 border-primary/20 flex flex-col justify-between">
+                               <h4 className="font-semibold text-slate-800">{port.project?.title || "Project"}</h4>
+                               <div className="mt-3">
+                                 {port.status === "ACTIVE" 
+                                    ? <Badge className="bg-blue-500 hover:bg-blue-600 gap-1"><Clock size={12}/> Ongoing</Badge> 
+                                    : <Badge className="bg-green-500 hover:bg-green-600 gap-1"><CheckCircle2 size={12}/> Completed</Badge>}
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                      </CardContent>
+                    )}
                   </Card>
                 </TabsContent>
-              )}
 
               {/* SETTINGS TAB */}
               <TabsContent value="settings" className="space-y-6 mt-0">
