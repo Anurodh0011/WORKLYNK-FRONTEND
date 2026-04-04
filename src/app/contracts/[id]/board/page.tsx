@@ -111,15 +111,15 @@ export default function BoardPage() {
       }
     }
   }, [data, selectedMilestoneId]);
-114: 
-115:   // Detect if project is completed and needs review (for both roles)
-116:   useEffect(() => {
-117:     if (data?.data?.contract?.status === "COMPLETED" && !isLoading) {
-118:         // We should check if user has already reviewed, 
-119:         // but for now we'll just show the dialog if it's COMPLETED
-120:         setShowReviewDialog(true);
-121:     }
-122:   }, [data, isLoading]);
+ 
+   // Detect if project is completed and needs review (for both roles)
+  useEffect(() => {
+    if (data?.data?.contract?.status === "COMPLETED" && !isLoading) {
+        // We should check if user has already reviewed, 
+         // but for now we'll just show the dialog if it's COMPLETED
+        setShowReviewDialog(true);
+     }
+   }, [data, isLoading]);
 
   // Determine if this is the final milestone to be paid
   const pendingMilestonesCount = milestones.filter(m => m.status !== "PAID").length;
@@ -444,6 +444,15 @@ export default function BoardPage() {
                         ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") 
                         : (activeMilestone.status === "PENDING" ? (activeMilestone.clientFeedback ? "Re-Submit Work" : "Submit Work") : "View Feedback")}
                     </Button>
+                    {!isClient && pendingMilestonesCount === 0 && data?.data?.contract?.status === "ACTIVE" && (
+                       <Button
+                          size="sm"
+                          onClick={handleCompleteProject}
+                          className="ml-2 bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20 text-white font-bold rounded-xl text-xs"
+                       >
+                         Complete Project
+                       </Button>
+                    )}
                  </div>
                ) : (
                   <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
@@ -771,7 +780,7 @@ export default function BoardPage() {
                       onClick={() => handleReviewMilestone("PAID")} 
                       className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
                   >
-                    {isFinalPayment ? "Approve & Complete Project" : "Approve & Pay"}
+                    Approve & Pay
                   </Button>
                 </>
             )}
