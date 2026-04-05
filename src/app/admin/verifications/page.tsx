@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import BaseLayout from "@/src/app/components/base-layout";
+import AdminBaseLayout from "@/src/app/components/admin-base-layout";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
-import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
+import { Card, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Badge } from "@/src/app/components/ui/badge";
@@ -83,8 +83,8 @@ export default function AdminVerificationsPage() {
   if (!user || user.role !== "ADMIN") return null;
 
   return (
-    <BaseLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <AdminBaseLayout>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Identity Verifications</h1>
@@ -200,6 +200,6 @@ export default function AdminVerificationsPage() {
           </CardContent>
         </Card>
       </div>
-    </BaseLayout>
+    </AdminBaseLayout>
   );
 }

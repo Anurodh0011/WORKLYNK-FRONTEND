@@ -1,0 +1,110 @@
+"use client";
+
+import React from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useAuthContext } from "@/src/hooks/context/AuthContext";
+import { Button } from "@/src/app/components/ui/button";
+import { toast } from "sonner";
+import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/src/lib/utils";
+
+interface AdminBaseLayoutProps {
+  children: React.ReactNode;
+}
+
+const ADMIN_MENU = [
+  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "Verifications", href: "/admin/verifications", icon: ShieldCheck },
+  { name: "User Management", href: "/admin/users", icon: User },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
+];
+
+export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, isLoading, logout }: any = useAuthContext();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      router.push("/admin/login");
+    } catch (error) {
+      toast.error("Logout failed");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen text-primary font-bold animate-pulse">Loading admin portal...</div>;
+  }
+
+  if (!user || user.role !== "ADMIN") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-4 bg-slate-50">
+        <h1 className="text-3xl font-black text-red-600">Unauthorized</h1>
+        <p className="font-medium text-muted-foreground">You do not have permission to view this portal.</p>
+        <Button onClick={() => router.push("/admin/login")} className="rounded-xl font-bold">Back to Login</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm">
+        <div className="p-6 border-b flex items-center justify-center">
+          <h1 className="text-2xl font-black text-primary tracking-tight">WorkLynk</h1>
+          <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase">Admin</span>
+        </div>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {ADMIN_MENU.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center space-x-3 p-3 rounded-xl transition-all duration-200",
+                  isActive 
+                    ? "bg-primary text-white font-bold shadow-md shadow-primary/20" 
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-semibold"
+                )}
+              >
+                <item.icon size={20} />
+                <span>{item.name}</span>
+                {isActive && <ChevronRight size={16} className="ml-auto" />}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="p-4 border-t mt-auto">
+          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 font-bold rounded-xl" onClick={handleLogout}>
+            <LogOut size={20} className="mr-3" />
+            Secure Logout
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <header className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+          <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Admin Operations</h2>
+          <div className="flex items-center space-x-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-bold text-slate-900">{user.name}</p>
+              <p className="text-xs font-semibold text-primary tracking-wide">Administrator</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-black shadow-sm">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-auto p-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
