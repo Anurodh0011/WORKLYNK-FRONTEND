@@ -565,15 +565,23 @@ export default function BoardPage() {
         {/* Main Board Area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
           {/* Board Header */}
-          <div className="px-8 py-6 flex items-center justify-between shrink-0 bg-white border-b border-slate-200 shadow-sm z-10">
+          <div className="px-8 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-white border-b border-slate-200 shadow-sm z-10">
             <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">
                 {projectTitle}
               </h1>
-              <p className="text-sm text-slate-500 font-medium">
-                Manage tasks and track progress for Milestone{" "}
-                {milestones.findIndex((m) => m.id === selectedMilestoneId) + 1}
-              </p>
+              <div className="flex items-center gap-4 mt-1">
+                <p className="text-sm text-slate-500 font-medium">
+                  Manage tasks and track progress for Milestone{" "}
+                  {milestones.findIndex((m) => m.id === selectedMilestoneId) + 1}
+                </p>
+                {kanbanData?.data?.contract?.startDate && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                    <Calendar size={14} className="text-primary" />
+                    Started: {new Date(kanbanData.data.contract.startDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex gap-4">
               {activeMilestone ? (
