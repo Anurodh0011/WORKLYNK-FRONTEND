@@ -6,22 +6,60 @@ import { useParams } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { baseFetcher, mutationFetcher } from "@/src/helpers/fetcher";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/app/components/ui/card";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { Textarea } from "@/src/app/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/src/app/components/ui/dialog";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
-import { Plus, MoreVertical, Edit2, Trash2, GripVertical, FileText, Calendar, User, CheckCircle2, AlertCircle, IndianRupee, Star, Send, Trophy } from "lucide-react";
+import {
+  Plus,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  GripVertical,
+  FileText,
+  Calendar,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  IndianRupee,
+  Star,
+  Send,
+  Trophy,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Task {
   id: string;
+  columnId: string;
   title: string;
-  description?: string;
+  description: string;
   order: number;
+}
+
+interface ColumnFeedback {
+  id: string;
+  content: string;
+  createdAt: string;
 }
 
 interface Column {
@@ -30,6 +68,7 @@ interface Column {
   color?: string;
   order: number;
   tasks: Task[];
+  feedbacks?: ColumnFeedback[];
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -38,7 +77,7 @@ const COLOR_MAP: Record<string, string> = {
   green: "bg-slate-50 border-slate-200 border-t-4 border-t-green-500",
   amber: "bg-slate-50 border-slate-200 border-t-4 border-t-amber-500",
   red: "bg-slate-50 border-slate-200 border-t-4 border-t-red-500",
-  purple: "bg-slate-50 border-slate-200 border-t-4 border-t-purple-500"
+  purple: "bg-slate-50 border-slate-200 border-t-4 border-t-purple-500",
 };
 
 const LABEL_MAP: any = {
@@ -47,7 +86,7 @@ const LABEL_MAP: any = {
   green: "text-green-700",
   amber: "text-amber-700",
   red: "text-red-700",
-  purple: "text-purple-700"
+  purple: "text-purple-700",
 };
 
 export default function BoardPage() {
@@ -57,13 +96,17 @@ export default function BoardPage() {
   const isClient = user?.role === "CLIENT";
   const isFreelancer = user?.role === "FREELANCER";
 
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(
+    null,
+  );
 
-  const { data, error, isLoading } = useSWR(
-    selectedMilestoneId 
-      ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` 
-      : `${API_BASE_URL}/kanban/${contractId}`,
-    baseFetcher
+  const currentKanbanUrl = selectedMilestoneId
+    ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}`
+    : `${API_BASE_URL}/kanban/${contractId}`;
+
+  const { data: kanbanData, error, isLoading } = useSWR(
+    currentKanbanUrl,
+    baseFetcher,
   );
 
   const [columns, setColumns] = useState<Column[]>([]);
@@ -76,9 +119,40 @@ export default function BoardPage() {
   const [showCreateColumnDialog, setShowCreateColumnDialog] = useState(false);
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
-  const [editingColumn, setEditingColumn] = useState<{ id: string, name: string } | null>(null);
+  const [editingColumn, setEditingColumn] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [newColumn, setNewColumn] = useState({ name: "", color: "slate" });
-  
+
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [newFeedback, setNewFeedback] = useState("");
+  const [activeFeedbackColumnId, setActiveFeedbackColumnId] = useState<string | null>(null);
+
+  const handleTaskFeedbackChange = (taskId: string, value: string) => {
+    // left empty in case there's any ref to it
+  };
+
+  // Reverted saveTaskFeedback inline since task level feedback is removed.
+
+  const handleAddFeedback = async () => {
+    if (!activeFeedbackColumnId || !newFeedback.trim()) return;
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${activeFeedbackColumnId}/feedback`, {
+        arg: { content: newFeedback },
+        method: "POST"
+      } as any);
+      if (response.success) {
+        toast.success("Feedback added");
+        mutate(currentKanbanUrl);
+        setShowFeedbackDialog(false);
+        setNewFeedback("");
+      }
+    } catch(err) {
+      toast.error("Failed to add feedback");
+    }
+  };
+
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
   const [milestoneNotes, setMilestoneNotes] = useState("");
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
@@ -90,40 +164,59 @@ export default function BoardPage() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
 
-  const isReadOnly = isClient || activeMilestone?.status === "PAID" || activeMilestone?.status === "IN_REVIEW";
+  const isProjectCompleted = kanbanData?.data?.contract?.status === "COMPLETED";
+
+  const isReadOnly =
+    isClient ||
+    activeMilestone?.status === "PAID" ||
+    activeMilestone?.status === "IN_REVIEW" ||
+    isProjectCompleted;
 
   useEffect(() => {
-    if (data?.data) {
-      setColumns(data.data.columns);
-      if (data.data.contract?.project?.title) {
-        setProjectTitle(data.data.contract.project.title);
+    if (kanbanData?.data) {
+      setColumns(kanbanData.data.columns);
+
+      // Task level feedbacks are obsolete
+      kanbanData.data.columns.forEach((col: any) => {
+      });
+
+      if (kanbanData.data.contract?.project?.title) {
+        setProjectTitle(kanbanData.data.contract.project.title);
       }
-      if (data.data.contract?.milestones) {
-        setMilestones(data.data.contract.milestones);
+      if (kanbanData.data.contract?.milestones) {
+        setMilestones(kanbanData.data.contract.milestones);
         let active = null;
         if (selectedMilestoneId) {
-          active = data.data.contract.milestones.find((m: any) => m.id === selectedMilestoneId);
+          active = kanbanData.data.contract.milestones.find(
+            (m: any) => m.id === selectedMilestoneId,
+          );
         } else {
-          active = data.data.contract.milestones.find((m: any) => m.status !== "PAID") || data.data.contract.milestones[0];
+          active =
+            kanbanData.data.contract.milestones.find(
+              (m: any) => m.status !== "PAID",
+            ) || kanbanData.data.contract.milestones[0];
           if (active) setSelectedMilestoneId(active.id);
         }
         setActiveMilestone(active);
       }
     }
-  }, [data, selectedMilestoneId]);
- 
-   // Detect if project is completed and needs review (for both roles)
+  }, [kanbanData, selectedMilestoneId]);
+
+  // Detect if project is completed and needs review (for both roles)
   useEffect(() => {
-    if (data?.data?.contract?.status === "COMPLETED" && !isLoading) {
-        // We should check if user has already reviewed, 
-         // but for now we'll just show the dialog if it's COMPLETED
-        setShowReviewDialog(true);
-     }
-   }, [data, isLoading]);
+    if (kanbanData?.data?.contract?.status === "COMPLETED" && !isLoading) {
+      // We should check if user has already reviewed,
+      // but for now we'll just show the dialog if it's COMPLETED
+      setShowReviewDialog(true);
+    }
+  }, [kanbanData, isLoading]);
 
   // Determine if this is the final milestone to be paid
-  const pendingMilestonesCount = milestones.filter(m => m.status !== "PAID").length;
-  const isFinalPayment = activeMilestone?.status === "IN_REVIEW" && pendingMilestonesCount === 1;
+  const pendingMilestonesCount = milestones.filter(
+    (m) => m.status !== "PAID",
+  ).length;
+  const isFinalPayment =
+    activeMilestone?.status === "IN_REVIEW" && pendingMilestonesCount === 1;
 
   const onDragEnd = async (result: DropResult) => {
     if (isReadOnly) return;
@@ -131,7 +224,11 @@ export default function BoardPage() {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    )
+      return;
 
     if (result.type === "COLUMN") {
       const newCols = Array.from(columns);
@@ -140,31 +237,34 @@ export default function BoardPage() {
       setColumns(newCols);
 
       try {
-        await mutationFetcher(`${API_BASE_URL}/kanban/columns/${draggableId}/move`, {
-          arg: { newOrder: destination.index },
-          method: "PATCH"
-        } as any);
+        await mutationFetcher(
+          `${API_BASE_URL}/kanban/columns/${draggableId}/move`,
+          {
+            arg: { newOrder: destination.index },
+            method: "PATCH",
+          } as any,
+        );
       } catch (err) {
         toast.error("Failed to move container");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`); // Rollback
+        mutate(currentKanbanUrl); // Rollback
       }
       return;
     }
 
     // Optimistic Update for Tasks
-    const sourceCol = columns.find(col => col.id === source.droppableId);
-    const destCol = columns.find(col => col.id === destination.droppableId);
-    
+    const sourceCol = columns.find((col) => col.id === source.droppableId);
+    const destCol = columns.find((col) => col.id === destination.droppableId);
+
     if (!sourceCol || !destCol) return;
 
     const newColumns = [...columns];
-    const sourceColIdx = newColumns.findIndex(c => c.id === sourceCol.id);
-    const destColIdx = newColumns.findIndex(c => c.id === destCol.id);
+    const sourceColIdx = newColumns.findIndex((c) => c.id === sourceCol.id);
+    const destColIdx = newColumns.findIndex((c) => c.id === destCol.id);
 
     const task = sourceCol.tasks[source.index];
     const newSourceTasks = Array.from(sourceCol.tasks);
     newSourceTasks.splice(source.index, 1);
-    
+
     if (source.droppableId === destination.droppableId) {
       newSourceTasks.splice(destination.index, 0, task);
       newColumns[sourceColIdx] = { ...sourceCol, tasks: newSourceTasks };
@@ -178,13 +278,19 @@ export default function BoardPage() {
     setColumns(newColumns);
 
     try {
-      await mutationFetcher(`${API_BASE_URL}/kanban/tasks/${draggableId}/move`, {
-        arg: { targetColumnId: destination.droppableId, newOrder: destination.index },
-        method: "PATCH"
-      } as any);
+      await mutationFetcher(
+        `${API_BASE_URL}/kanban/tasks/${draggableId}/move`,
+        {
+          arg: {
+            targetColumnId: destination.droppableId,
+            newOrder: destination.index,
+          },
+          method: "PATCH",
+        } as any,
+      );
     } catch (err) {
       toast.error("Failed to move task");
-      mutate(`${API_BASE_URL}/kanban/${contractId}`); // Rollback
+      mutate(currentKanbanUrl); // Rollback
     }
   };
 
@@ -193,12 +299,17 @@ export default function BoardPage() {
 
     try {
       const response = await mutationFetcher(`${API_BASE_URL}/kanban/tasks`, {
-        arg: { contractId, columnId: activeColumnId, title: newTask.title, description: newTask.description },
+        arg: {
+          contractId,
+          columnId: activeColumnId,
+          title: newTask.title,
+          description: newTask.description,
+        },
       } as any);
 
       if (response.success) {
         toast.success("Task created");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowTaskDialog(false);
         setNewTask({ title: "", description: "" });
       }
@@ -211,14 +322,17 @@ export default function BoardPage() {
     if (!editingColumn || !editingColumn.name.trim()) return;
 
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${editingColumn.id}`, {
-        arg: { name: editingColumn.name },
-        method: "PATCH"
-      } as any);
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/columns/${editingColumn.id}`,
+        {
+          arg: { name: editingColumn.name },
+          method: "PATCH",
+        } as any,
+      );
 
       if (response.success) {
-        toast.success("Column renamed");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        toast.success("Container renamed");
+        mutate(currentKanbanUrl);
         setShowColumnDialog(false);
       }
     } catch (err) {
@@ -231,17 +345,17 @@ export default function BoardPage() {
 
     try {
       const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns`, {
-        arg: { 
-          contractId, 
+        arg: {
+          contractId,
           milestoneId: activeMilestone.id,
           name: newColumn.name,
-          color: newColumn.color
+          color: newColumn.color,
         },
       } as any);
 
       if (response.success) {
         toast.success("Column created");
-        mutate(selectedMilestoneId ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` : `${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowCreateColumnDialog(false);
         setNewColumn({ name: "", color: "slate" });
       }
@@ -251,15 +365,23 @@ export default function BoardPage() {
   };
 
   const handleDeleteColumn = async (columnId: string) => {
-    if (!confirm("Are you sure you want to delete this container and all its tasks?")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this container and all its tasks?",
+      )
+    )
+      return;
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${columnId}`, {
-        method: "DELETE"
-      } as any);
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/columns/${columnId}`,
+        {
+          method: "DELETE",
+        } as any,
+      );
 
       if (response && response.success !== false) {
         toast.success("Container deleted");
-        mutate(selectedMilestoneId ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}` : `${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
       }
     } catch (err) {
       toast.error("Failed to delete container");
@@ -269,12 +391,15 @@ export default function BoardPage() {
   const handleSubmitMilestone = async () => {
     if (!activeMilestone) return;
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/submit`, {
-        arg: { notes: milestoneNotes },
-      } as any);
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/submit`,
+        {
+          arg: { notes: milestoneNotes },
+        } as any,
+      );
       if (response.success) {
         toast.success("Milestone submitted for review");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
       }
     } catch (err) {
@@ -285,17 +410,22 @@ export default function BoardPage() {
   const handleReviewMilestone = async (status: "PAID" | "PENDING") => {
     if (!activeMilestone) return;
     if (status === "PENDING" && !milestoneFeedback.trim()) {
-       toast.error("Please provide feedback for revisions.");
-       return;
+      toast.error("Please provide feedback for revisions.");
+      return;
     }
-    
+
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/review`, {
-        arg: { status, feedback: milestoneFeedback },
-      } as any);
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/review`,
+        {
+          arg: { status, feedback: milestoneFeedback },
+        } as any,
+      );
       if (response.success) {
-        toast.success(`Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`);
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        toast.success(
+          `Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`,
+        );
+        mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
         setMilestoneFeedback("");
       }
@@ -306,7 +436,7 @@ export default function BoardPage() {
 
   const handleCompleteProject = async () => {
     // Determine if we can complete: All milestones must be PAID
-    const allPaid = milestones.every(m => m.status === "PAID");
+    const allPaid = milestones.every((m) => m.status === "PAID");
     if (!allPaid) {
       toast.error("All milestones must be paid before completing the project.");
       return;
@@ -324,7 +454,7 @@ export default function BoardPage() {
 
     setIsCompleting(true);
     try {
-      if (isFreelancer && data?.data?.contract?.status !== "COMPLETED") {
+      if (isFreelancer && kanbanData?.data?.contract?.status !== "COMPLETED") {
         const completeData = await mutationFetcher(
           `${API_BASE_URL}/contracts/${contractId}/complete`,
           { arg: {} } as any,
@@ -348,9 +478,10 @@ export default function BoardPage() {
 
       // Redirect with success message
       setTimeout(() => {
-        window.location.href = isFreelancer ? "/dashboard/contracts?success=completed" : "/dashboard/projects?success=completed";
+        window.location.href = isFreelancer
+          ? "/dashboard/contracts?success=completed"
+          : "/dashboard/projects?success=completed";
       }, 1500);
-
     } catch (err: any) {
       toast.error(err.message || "System error during completion");
     } finally {
@@ -358,7 +489,12 @@ export default function BoardPage() {
     }
   };
 
-  if (isLoading) return <BaseLayout><div className="p-20 text-center">Loading board...</div></BaseLayout>;
+  if (isLoading)
+    return (
+      <BaseLayout>
+        <div className="p-20 text-center">Loading board...</div>
+      </BaseLayout>
+    );
 
   return (
     <BaseLayout>
@@ -366,239 +502,439 @@ export default function BoardPage() {
         {/* Sidebar */}
         <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 shadow-sm z-10">
           <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-black text-lg text-slate-800 tracking-tight">Milestones</h2>
-            <p className="text-xs text-muted-foreground font-medium mt-1">Project Roadmap</p>
+            <h2 className="font-black text-lg text-slate-800 tracking-tight">
+              Milestones
+            </h2>
+            <p className="text-xs text-muted-foreground font-medium mt-1">
+              Project Roadmap
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/30">
             {milestones.map((m: any, index: number) => (
-              <div 
+              <div
                 key={m.id}
                 onClick={() => setSelectedMilestoneId(m.id)}
-                className={`p-4 rounded-2xl cursor-pointer transition-all border ${selectedMilestoneId === m.id ? 'bg-primary/5 border-primary shadow-sm shadow-primary/10' : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'}`}
+                className={`p-4 rounded-2xl cursor-pointer transition-all border ${selectedMilestoneId === m.id ? "bg-primary/5 border-primary shadow-sm shadow-primary/10" : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50"}`}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${selectedMilestoneId === m.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${selectedMilestoneId === m.id ? "bg-primary text-white" : "bg-slate-100 text-slate-500"}`}
+                  >
                     {index + 1}
                   </div>
-                  <h4 className={`text-sm font-bold truncate ${selectedMilestoneId === m.id ? 'text-primary' : 'text-slate-700'}`}>{m.title}</h4>
+                  <h4
+                    className={`text-sm font-bold truncate ${selectedMilestoneId === m.id ? "text-primary" : "text-slate-700"}`}
+                  >
+                    {m.title}
+                  </h4>
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <span className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === 'PAID' ? 'bg-green-100 text-green-700' : m.status === 'IN_REVIEW' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{m.status}</span>
-                  <span className="text-xs font-bold text-slate-500">रू {m.amount}</span>
+                  <span
+                    className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === "PAID" ? "bg-green-100 text-green-700" : m.status === "IN_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                  >
+                    {m.status}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">
+                    रू {m.amount}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Completion Action Footer */}
-          {isFreelancer && milestones.length > 0 && milestones.every(m => m.status === "PAID") && (
-            <div className="p-4 border-t border-slate-100 bg-white">
-               <Button 
-                onClick={handleCompleteProject}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-6 rounded-2xl shadow-lg shadow-green-500/20 group animate-pulse hover:animate-none"
-               >
-                 <CheckCircle2 className="mr-2 group-hover:scale-110 transition-transform" />
-                 MARK COMPLETED
-               </Button>
+          {isProjectCompleted ? (
+            <div className="p-4 border-t border-slate-100 bg-green-50 flex items-center justify-center text-green-600 font-black tracking-widest text-xs uppercase py-6 border-b">
+               <CheckCircle2 className="mr-2" size={16} /> COMPLETED
             </div>
+          ) : (
+            isFreelancer &&
+            milestones.length > 0 &&
+            milestones.every((m: any) => m.status === "PAID") && (
+              <div className="p-4 border-t border-slate-100 bg-white">
+                <Button
+                  onClick={handleCompleteProject}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-6 rounded-2xl shadow-lg shadow-green-500/20 group animate-pulse hover:animate-none"
+                >
+                  <CheckCircle2 className="mr-2 group-hover:scale-110 transition-transform" />
+                  MARK COMPLETED
+                </Button>
+              </div>
+            )
           )}
+
+          {/* User Info Section */}
+          <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">
+              {isClient ? "Freelancer Info" : "Client Info"}
+            </h3>
+            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 group hover:border-primary/20 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-primary/20">
+                {isClient ? (
+                  kanbanData?.data?.contract?.freelancer?.profile?.profilePicture ? (
+                    <img
+                      src={kanbanData.data.contract.freelancer.profile.profilePicture}
+                      alt="Freelancer"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    kanbanData?.data?.contract?.freelancer?.name?.charAt(0) || "F"
+                  )
+                ) : kanbanData?.data?.contract?.client?.profile?.profilePicture ? (
+                  <img
+                    src={kanbanData.data.contract.client.profile.profilePicture}
+                    alt="Client"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  kanbanData?.data?.contract?.client?.name?.charAt(0) || "C"
+                )}
+              </div>
+              <div className="overflow-hidden pr-2">
+                <p className="text-sm font-bold text-slate-800 truncate leading-snug group-hover:text-primary transition-colors">
+                  {isClient
+                    ? kanbanData?.data?.contract?.freelancer?.name
+                    : kanbanData?.data?.contract?.client?.name}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate font-semibold">
+                  {isClient
+                    ? kanbanData?.data?.contract?.freelancer?.email
+                    : kanbanData?.data?.contract?.client?.email}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Main Board Area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
           {/* Board Header */}
-          <div className="px-8 py-6 flex items-center justify-between shrink-0 bg-white border-b border-slate-200 shadow-sm z-10">
+          <div className="px-8 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-white border-b border-slate-200 shadow-sm z-10">
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">{projectTitle}</h1>
-              <p className="text-sm text-slate-500 font-medium">Manage tasks and track progress for Milestone {milestones.findIndex(m => m.id === selectedMilestoneId) + 1}</p>
+              <h1 className="text-2xl font-black tracking-tight text-slate-800 truncate max-w-2xl">
+                {projectTitle}
+              </h1>
+              <div className="flex items-center gap-4 mt-1">
+                <p className="text-sm text-slate-500 font-medium">
+                  Manage tasks and track progress for Milestone{" "}
+                  {milestones.findIndex((m) => m.id === selectedMilestoneId) + 1}
+                </p>
+                {kanbanData?.data?.contract?.startDate && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                    <Calendar size={14} className="text-primary" />
+                    Started: {new Date(kanbanData.data.contract.startDate).toLocaleDateString()}
+                  </span>
+                )}
+                {kanbanData?.data?.contract?.endDate && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-md">
+                    <CheckCircle2 size={14} className="text-green-600" />
+                    Completed: {new Date(kanbanData.data.contract.endDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex gap-4">
-               {activeMilestone ? (
-                 <div className="bg-white border text-left border-primary/20 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                       <CheckCircle2 size={20} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm tracking-tight text-slate-800">Target: {activeMilestone.title}</h4>
-                      <p className="text-[10px] text-muted-foreground uppercase font-black">
-                        Status: <span className={activeMilestone.status === "IN_REVIEW" ? "text-amber-500" : activeMilestone.status === "PAID" ? "text-green-500" : "text-primary"}>{activeMilestone.status}</span>
-                      </p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant={activeMilestone.status === "IN_REVIEW" && isClient ? "default" : "outline"} 
-                      className="ml-4 rounded-xl shadow-sm text-xs font-bold"
-                      onClick={() => setShowMilestoneDialog(true)}
-                    >
-                      {isClient 
-                        ? (activeMilestone.status === "IN_REVIEW" ? "Review Milestone" : "View Details") 
-                        : (activeMilestone.status === "PENDING" ? (activeMilestone.clientFeedback ? "Re-Submit Work" : "Submit Work") : "View Feedback")}
-                    </Button>
-                    {!isClient && pendingMilestonesCount === 0 && data?.data?.contract?.status === "ACTIVE" && (
-                       <Button
-                          size="sm"
-                          onClick={handleCompleteProject}
-                          className="ml-2 bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20 text-white font-bold rounded-xl text-xs"
-                       >
-                         Complete Project
-                       </Button>
-                    )}
-                 </div>
-               ) : (
-                  <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
+              {activeMilestone ? (
+                <div className="bg-white border text-left border-primary/20 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                     <CheckCircle2 size={20} />
-                    <h4 className="font-bold text-sm">Milestone Finished!</h4>
                   </div>
-               )}
+                  <div>
+                    <h4 className="font-bold text-sm tracking-tight text-slate-800">
+                      Target: {activeMilestone.title}
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black">
+                      Status:{" "}
+                      <span
+                        className={
+                          activeMilestone.status === "IN_REVIEW"
+                            ? "text-amber-500"
+                            : activeMilestone.status === "PAID"
+                              ? "text-green-500"
+                              : "text-primary"
+                        }
+                      >
+                        {activeMilestone.status}
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={
+                      activeMilestone.status === "IN_REVIEW" && isClient
+                        ? "default"
+                        : "outline"
+                    }
+                    className="ml-4 rounded-xl shadow-sm text-xs font-bold"
+                    onClick={() => setShowMilestoneDialog(true)}
+                  >
+                    {isClient
+                      ? activeMilestone.status === "IN_REVIEW"
+                        ? "Review Milestone"
+                        : "View Details"
+                      : activeMilestone.status === "PENDING"
+                        ? activeMilestone.clientFeedback
+                          ? "Re-Submit Work"
+                          : "Submit Work"
+                        : "View Feedback"}
+                  </Button>
+                  {!isClient &&
+                    pendingMilestonesCount === 0 &&
+                    kanbanData?.data?.contract?.status === "ACTIVE" && (
+                      <Button
+                        size="sm"
+                        onClick={handleCompleteProject}
+                        className="ml-2 bg-green-500 hover:bg-green-600 shadow-sm shadow-green-500/20 text-white font-bold rounded-xl text-xs"
+                      >
+                        Complete Project
+                      </Button>
+                    )}
+                </div>
+              ) : (
+                <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
+                  <CheckCircle2 size={20} />
+                  <h4 className="font-bold text-sm">Milestone Finished!</h4>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Board Body */}
           <div className="flex-1 overflow-x-auto px-8 py-6 custom-scrollbar">
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN" isDropDisabled={isReadOnly}>
-              {(provided) => (
-                <div 
-                  className="flex gap-6 h-full min-w-max"
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                >
-                  {columns.map((column, index) => (
-                    <Draggable key={column.id} draggableId={column.id} index={index} isDragDisabled={isReadOnly}>
-                      {(provided, snapshot) => (
-                        <div 
-                          ref={provided.innerRef} 
-                          {...provided.draggableProps}
-                          className={`w-80 flex flex-col h-full rounded-2xl border p-4 ${COLOR_MAP[column.color || "slate"]} ${snapshot.isDragging ? 'shadow-2xl scale-[1.02] rotate-1 z-50' : ''}`}
-                        >
-                          <div 
-                            {...provided.dragHandleProps}
-                            className={`flex items-center justify-between mb-4 px-2 ${!isReadOnly ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable
+                droppableId="all-columns"
+                direction="horizontal"
+                type="COLUMN"
+                isDropDisabled={isReadOnly}
+              >
+                {(provided) => (
+                  <div
+                    className="flex gap-6 h-full min-w-max"
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                  >
+                    {columns.map((column, index) => (
+                      <Draggable
+                        key={column.id}
+                        draggableId={column.id}
+                        index={index}
+                        isDragDisabled={isReadOnly}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`w-80 flex flex-col h-full rounded-2xl border p-4 ${COLOR_MAP[column.color || "slate"]} ${snapshot.isDragging ? "shadow-2xl scale-[1.02] rotate-1 z-50" : ""}`}
                           >
-                            <h3 
-                                className={`font-black text-sm uppercase tracking-widest truncate transition-colors ${LABEL_MAP[column.color || "slate"]} ${!isReadOnly ? 'hover:opacity-75' : ''}`}
-                                onClick={() => {
-                                    if (isReadOnly) return;
-                                    setEditingColumn({ id: column.id, name: column.name });
-                                    setShowColumnDialog(true);
-                                }}
+                            <div
+                              {...provided.dragHandleProps}
+                              className={`flex items-center justify-between mb-4 px-2 ${!isReadOnly ? "cursor-grab active:cursor-grabbing" : ""}`}
                             >
-                              {column.name} <span className="ml-2 text-slate-400 font-bold">{column.tasks.length}</span>
-                            </h3>
-                            {!isClient && (
-                              <div className="flex items-center">
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                              <h3
+                                className={`font-black text-sm uppercase tracking-widest truncate transition-colors ${LABEL_MAP[column.color || "slate"]} ${!isReadOnly ? "hover:opacity-75" : ""}`}
+                                onClick={() => {
+                                  if (isReadOnly) return;
+                                  setEditingColumn({
+                                    id: column.id,
+                                    name: column.name,
+                                  });
+                                  setShowColumnDialog(true);
+                                }}
+                              >
+                                {column.name}{" "}
+                                <span className="ml-2 text-slate-400 font-bold">
+                                  {column.tasks.length}
+                                </span>
+                              </h3>
+                              {!isReadOnly && (
+                                <div className="flex items-center">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white/50"
-                                    onClick={() => handleDeleteColumn(column.id)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                    onClick={() =>
+                                      handleDeleteColumn(column.id)
+                                    }
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
                                     onClick={() => {
-                                        setActiveColumnId(column.id);
-                                        setShowTaskDialog(true);
+                                      setActiveColumnId(column.id);
+                                      setShowTaskDialog(true);
                                     }}
-                                >
-                                  <Plus size={18} />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                                  >
+                                    <Plus size={18} />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
 
-                          <Droppable droppableId={column.id} isDropDisabled={isReadOnly}>
-                            {(provided) => (
-                              <div
-                                {...provided.droppableProps}
-                                ref={provided.innerRef}
-                                className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
-                              >
-                                {column.tasks.map((task, index) => (
-                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={isReadOnly}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        className={`
+                            <Droppable
+                              droppableId={column.id}
+                              isDropDisabled={isReadOnly}
+                            >
+                              {(provided) => (
+                                <div
+                                  {...provided.droppableProps}
+                                  ref={provided.innerRef}
+                                  className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar"
+                                >
+                                  {column.tasks.map((task, index) => (
+                                    <Draggable
+                                      key={task.id}
+                                      draggableId={task.id}
+                                      index={index}
+                                      isDragDisabled={isReadOnly}
+                                    >
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className={`
                                           bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-slate-300 
                                           hover:shadow transition-all group cursor-grab active:cursor-grabbing
-                                          ${snapshot.isDragging ? 'shadow-lg border-primary ring-2 ring-primary/10 scale-[1.02] rotate-1' : ''}
+                                          ${snapshot.isDragging ? "shadow-lg border-primary ring-2 ring-primary/10 scale-[1.02] rotate-1" : ""}
                                         `}
-                                      >
-                                        <h4 className="font-bold text-slate-800 mb-2 leading-snug">{task.title}</h4>
-                                        {task.description && (
-                                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
-                                            {task.description}
-                                          </p>
-                                        )}
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex -space-x-1">
-                                              <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
-                                                  <User size={12} className="text-primary" />
-                                              </div>
-                                          </div>
-                                          <span className="text-[10px] font-black uppercase text-slate-400">#TK-{task.id.slice(0,4)}</span>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
+                                        >
+                                          <h4 className="font-bold text-slate-800 mb-2 leading-snug">
+                                            {task.title}
+                                          </h4>
+                                          {task.description && (
+                                            <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">
+                                              {task.description}
+                                            </p>
+                                          )}
 
-                  {/* Add Column Button */}
-                  {!isReadOnly && activeMilestone && (
-                    <div className="w-80 shrink-0">
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-16 rounded-2xl border-dashed border-2 bg-transparent hover:bg-slate-100 text-slate-500 hover:text-primary font-bold transition-all shadow-sm"
-                        onClick={() => setShowCreateColumnDialog(true)}
-                      >
-                        <Plus size={18} className="mr-2" /> Add Container
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+                                            {/* Client Feedback Input has been removed card-wise */}
+
+                                          <div className="flex items-center justify-between mt-3">
+                                            <div className="flex -space-x-1">
+                                              <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
+                                                <User
+                                                  size={12}
+                                                  className="text-primary"
+                                                />
+                                              </div>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase text-slate-400">
+                                              #TK-{task.id.slice(0, 4)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+
+                            {/* Display Client Feedbacks */ }
+                            {column.feedbacks && column.feedbacks.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-slate-200/60 pb-2 space-y-3 shrink-0">
+                                  <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 flex items-center">
+                                    <AlertCircle size={12} className="mr-1" /> Client Feedback
+                                  </Label>
+                                  <div className="space-y-3 overflow-y-auto max-h-[30vh] custom-scrollbar pr-1">
+                                    {column.feedbacks.map((fb) => (
+                                      <div key={fb.id} className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-200 group relative">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center">
+                                            <div className="w-5 h-5 rounded-full border-2 border-white bg-amber-200/50 flex items-center justify-center">
+                                              <User size={10} className="text-amber-700" />
+                                            </div>
+                                            <span className="ml-2 text-[9px] font-black uppercase text-amber-500">
+                                              {new Date(fb.createdAt).toLocaleDateString()}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-amber-900 leading-relaxed font-medium whitespace-pre-wrap">
+                                          {fb.content}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                            )}
+
+                            {/* Client Add Feedback Button */}
+                            {isClient && !isProjectCompleted && (
+                               <div className="mt-2 shrink-0">
+                                  <Button 
+                                    variant="outline" 
+                                    className="w-full h-10 text-xs font-bold text-amber-600 bg-amber-50 hovering:bg-amber-100 border-amber-200 border-dashed"
+                                    onClick={() => {
+                                       setActiveFeedbackColumnId(column.id);
+                                       setShowFeedbackDialog(true);
+                                    }}
+                                  >
+                                     <Plus size={14} className="mr-1" /> Add Feedback Card
+                                  </Button>
+                               </div>
+                            )}
+
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+
+                    {/* Add Column Button */}
+                    {!isReadOnly && activeMilestone && (
+                      <div className="w-80 shrink-0">
+                        <Button
+                          variant="outline"
+                          className="w-full h-16 rounded-2xl border-dashed border-2 bg-transparent hover:bg-slate-100 text-slate-500 hover:text-primary font-bold transition-all shadow-sm"
+                          onClick={() => setShowCreateColumnDialog(true)}
+                        >
+                          <Plus size={18} className="mr-2" /> Add Container
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
         </div>
       </div>
 
       {/* Create Column Dialog */}
-      <Dialog open={showCreateColumnDialog} onOpenChange={setShowCreateColumnDialog}>
+      <Dialog
+        open={showCreateColumnDialog}
+        onOpenChange={setShowCreateColumnDialog}
+      >
         <DialogContent className="rounded-3xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">New Container</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              New Container
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="font-bold">Container Name</Label>
-              <Input 
-                placeholder="e.g. In Progress, Review..." 
+              <Input
+                placeholder="e.g. In Progress, Review..."
                 value={newColumn.name}
-                onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
+                onChange={(e) =>
+                  setNewColumn({ ...newColumn, name: e.target.value })
+                }
                 className="rounded-xl border-slate-200 focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Label Color</Label>
-              <select 
+              <select
                 value={newColumn.color}
-                onChange={(e) => setNewColumn({ ...newColumn, color: e.target.value })}
+                onChange={(e) =>
+                  setNewColumn({ ...newColumn, color: e.target.value })
+                }
                 className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-transparent px-3 py-2 text-sm focus:ring-primary/20 outline-none"
               >
                 <option value="slate">Slate (Default)</option>
@@ -611,11 +947,17 @@ export default function BoardPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" className="rounded-xl" onClick={() => setShowCreateColumnDialog(false)}>Cancel</Button>
-            <Button 
-                onClick={handleCreateColumn} 
-                disabled={!newColumn.name.trim()}
-                className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
+            <Button
+              variant="ghost"
+              className="rounded-xl"
+              onClick={() => setShowCreateColumnDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateColumn}
+              disabled={!newColumn.name.trim()}
+              className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20"
             >
               Create Container
             </Button>
@@ -632,29 +974,35 @@ export default function BoardPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="font-bold">Task Title</Label>
-              <Input 
-                placeholder="What needs to be done?" 
+              <Input
+                placeholder="What needs to be done?"
                 value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, title: e.target.value })
+                }
                 className="rounded-xl border-slate-200 focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
               <Label className="font-bold">Description (Optional)</Label>
-              <Textarea 
-                placeholder="Add more details..." 
+              <Textarea
+                placeholder="Add more details..."
                 value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, description: e.target.value })
+                }
                 className="min-h-[100px] rounded-xl border-slate-200 focus:ring-primary/20"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowTaskDialog(false)}>Cancel</Button>
-            <Button 
-                onClick={handleAddTask} 
-                disabled={!newTask.title.trim()}
-                className="rounded-xl font-bold shadow-lg shadow-primary/20"
+            <Button variant="ghost" onClick={() => setShowTaskDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddTask}
+              disabled={!newTask.title.trim()}
+              className="rounded-xl font-bold shadow-lg shadow-primary/20"
             >
               Create Task
             </Button>
@@ -669,15 +1017,30 @@ export default function BoardPage() {
             <DialogTitle className="font-bold">Rename Column</DialogTitle>
           </DialogHeader>
           <div className="py-4 font-black">
-            <Input 
+            <Input
               value={editingColumn?.name || ""}
-              onChange={(e) => setEditingColumn(prev => prev ? { ...prev, name: e.target.value } : null)}
+              onChange={(e) =>
+                setEditingColumn((prev) =>
+                  prev ? { ...prev, name: e.target.value } : null,
+                )
+              }
               className="rounded-xl border-slate-200 font-bold"
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" className="text-xs" onClick={() => setShowColumnDialog(false)}>Cancel</Button>
-            <Button onClick={handleRenameColumn} className="rounded-xl text-xs font-bold">Save Changes</Button>
+            <Button
+              variant="ghost"
+              className="text-xs"
+              onClick={() => setShowColumnDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameColumn}
+              className="rounded-xl text-xs font-bold"
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -687,32 +1050,58 @@ export default function BoardPage() {
         <DialogContent className="rounded-3xl max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
-               {isClient ? (activeMilestone?.status === "IN_REVIEW" ? "Provide Milestone Feedback" : "Milestone Details") : (activeMilestone?.status === "PENDING" && activeMilestone?.clientFeedback ? "Resubmit Milestone" : "Milestone Completion")}
+              {isClient
+                ? activeMilestone?.status === "IN_REVIEW"
+                  ? "Provide Milestone Feedback"
+                  : "Milestone Details"
+                : activeMilestone?.status === "PENDING" &&
+                    activeMilestone?.clientFeedback
+                  ? "Resubmit Milestone"
+                  : "Milestone Completion"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 px-2">
             <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-              <h4 className="font-black text-lg mb-1">{activeMilestone?.title}</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">{activeMilestone?.description}</p>
+              <h4 className="font-black text-lg mb-1">
+                {activeMilestone?.title}
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {activeMilestone?.description}
+              </p>
               <div className="mt-4 flex items-center justify-between text-sm font-bold">
-                 <span className="flex items-center gap-1 text-primary"><IndianRupee size={16} /> {activeMilestone?.amount}</span>
-                 <span className="flex items-center gap-1 text-muted-foreground"><Calendar size={16} /> Due {activeMilestone?.dueDate ? new Date(activeMilestone.dueDate).toLocaleDateString() : 'N/A'}</span>
+                <span className="flex items-center gap-1 text-primary">
+                  <IndianRupee size={16} /> {activeMilestone?.amount}
+                </span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar size={16} /> Due{" "}
+                  {activeMilestone?.dueDate
+                    ? new Date(activeMilestone.dueDate).toLocaleDateString()
+                    : "N/A"}
+                </span>
               </div>
             </div>
 
             {/* If Client Feedback exists, show it */}
             {activeMilestone?.clientFeedback && (
               <div className="bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 text-sm">
-                <span className="font-bold flex items-center gap-1 text-amber-700 mb-1"><AlertCircle size={14} /> Client Feedback</span>
-                <p className="text-amber-900">{activeMilestone.clientFeedback}</p>
+                <span className="font-bold flex items-center gap-1 text-amber-700 mb-1">
+                  <AlertCircle size={14} /> Client Feedback
+                </span>
+                <p className="text-amber-900">
+                  {activeMilestone.clientFeedback}
+                </p>
               </div>
             )}
 
             {/* If Freelancer Notes exists, show it */}
             {activeMilestone?.freelancerNotes && (
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 text-sm">
-                <span className="font-bold text-primary mb-1 block">Freelancer Notes</span>
-                <p className="text-slate-700">{activeMilestone.freelancerNotes}</p>
+                <span className="font-bold text-primary mb-1 block">
+                  Freelancer Notes
+                </span>
+                <p className="text-slate-700">
+                  {activeMilestone.freelancerNotes}
+                </p>
               </div>
             )}
 
@@ -720,10 +1109,16 @@ export default function BoardPage() {
             {!isClient && activeMilestone?.status === "PENDING" && (
               <div className="space-y-2 mt-4">
                 <Label className="font-bold">
-                  {activeMilestone.clientFeedback ? "Explanation of Corrections (Optional)" : "Add Notes for Client (Optional)"}
+                  {activeMilestone.clientFeedback
+                    ? "Explanation of Corrections (Optional)"
+                    : "Add Notes for Client (Optional)"}
                 </Label>
-                <Textarea 
-                  placeholder={activeMilestone.clientFeedback ? "Detail the changes you made based on the feedback..." : "Describe what was completed..."} 
+                <Textarea
+                  placeholder={
+                    activeMilestone.clientFeedback
+                      ? "Detail the changes you made based on the feedback..."
+                      : "Describe what was completed..."
+                  }
                   value={milestoneNotes}
                   onChange={(e) => setMilestoneNotes(e.target.value)}
                   className="rounded-xl border-slate-200 focus:ring-primary/20"
@@ -734,8 +1129,8 @@ export default function BoardPage() {
             {isClient && activeMilestone?.status === "IN_REVIEW" && (
               <div className="space-y-2 mt-4">
                 <Label className="font-bold">Feedback / Revision Request</Label>
-                <Textarea 
-                  placeholder="If revisions are needed, type them here. If approving, this is optional." 
+                <Textarea
+                  placeholder="If revisions are needed, type them here. If approving, this is optional."
                   value={milestoneFeedback}
                   onChange={(e) => setMilestoneFeedback(e.target.value)}
                   className="rounded-xl border-slate-200 focus:ring-primary/20 min-h-[100px]"
@@ -743,36 +1138,44 @@ export default function BoardPage() {
               </div>
             )}
           </div>
-          
+
           <DialogFooter className="gap-2 sm:gap-0 border-t border-slate-100 pt-4">
-            <Button variant="ghost" className="rounded-xl" onClick={() => setShowMilestoneDialog(false)}>Close</Button>
-            
+            <Button
+              variant="ghost"
+              className="rounded-xl"
+              onClick={() => setShowMilestoneDialog(false)}
+            >
+              Close
+            </Button>
+
             {!isClient && activeMilestone?.status === "PENDING" && (
-                <Button 
-                    onClick={handleSubmitMilestone} 
-                    className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20 flex items-center gap-2"
-                >
-                  <CheckCircle2 size={16} />
-                  {activeMilestone.clientFeedback ? "Resubmit for Review" : "Submit for Review"}
-                </Button>
+              <Button
+                onClick={handleSubmitMilestone}
+                className="rounded-xl font-bold px-6 shadow-lg shadow-primary/20 flex items-center gap-2"
+              >
+                <CheckCircle2 size={16} />
+                {activeMilestone.clientFeedback
+                  ? "Resubmit for Review"
+                  : "Submit for Review"}
+              </Button>
             )}
 
             {isClient && activeMilestone?.status === "IN_REVIEW" && (
-                <>
-                  <Button 
-                      variant="outline"
-                      onClick={() => handleReviewMilestone("PENDING")} 
-                      className="rounded-xl font-bold border-amber-500/50 text-amber-600 hover:bg-amber-50"
-                  >
-                    Send Feedback
-                  </Button>
-                  <Button 
-                      onClick={() => handleReviewMilestone("PAID")} 
-                      className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
-                  >
-                    Approve & Pay
-                  </Button>
-                </>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => handleReviewMilestone("PENDING")}
+                  className="rounded-xl font-bold border-amber-500/50 text-amber-600 hover:bg-amber-50"
+                >
+                  Send Feedback
+                </Button>
+                <Button
+                  onClick={() => handleReviewMilestone("PAID")}
+                  className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+                >
+                  Approve & Pay
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>
@@ -799,19 +1202,28 @@ export default function BoardPage() {
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
         <DialogContent className="rounded-[2.5rem] max-w-xl p-0 overflow-hidden border-none shadow-2xl">
           <div className="bg-gradient-to-br from-primary to-primary-foreground p-12 text-center text-white relative">
-            <div className="absolute top-4 right-4 text-white/40 font-black text-6xl select-none opacity-20">FINISH</div>
+            <div className="absolute top-4 right-4 text-white/40 font-black text-6xl select-none opacity-20">
+              FINISH
+            </div>
             <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl mx-auto mb-6 flex items-center justify-center border border-white/30 shadow-2xl rotate-3">
               <Trophy size={48} className="text-white drop-shadow-lg" />
             </div>
-            <h2 className="text-4xl font-black tracking-tighter mb-2">Project Completed!</h2>
-            <p className="text-white/80 font-medium">How was your experience working with the {isFreelancer ? 'Client' : 'Freelancer'}?</p>
+            <h2 className="text-4xl font-black tracking-tighter mb-2">
+              Project Completed!
+            </h2>
+            <p className="text-white/80 font-medium">
+              How was your experience working with the{" "}
+              {isFreelancer ? "Client" : "Freelancer"}?
+            </p>
           </div>
-          
+
           <div className="p-10 bg-white">
             <div className="space-y-8">
               {/* Star Rating */}
               <div className="text-center">
-                <Label className="font-black text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6 block">Overall Satisfaction</Label>
+                <Label className="font-black text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6 block">
+                  Overall Satisfaction
+                </Label>
                 <div className="flex justify-center gap-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -833,22 +1245,34 @@ export default function BoardPage() {
                   ))}
                 </div>
                 <div className="h-6 mt-3">
-                    {rating > 0 && (
-                        <p className="text-amber-600 font-black text-sm uppercase tracking-widest animate-in fade-in slide-in-from-bottom-1">
-                            {rating === 5 ? "Incredible!" : rating === 4 ? "Great Work!" : rating === 3 ? "Satisfactory" : rating === 2 ? "Needs Improvement" : "Poor Experience"}
-                        </p>
-                    )}
+                  {rating > 0 && (
+                    <p className="text-amber-600 font-black text-sm uppercase tracking-widest animate-in fade-in slide-in-from-bottom-1">
+                      {rating === 5
+                        ? "Incredible!"
+                        : rating === 4
+                          ? "Great Work!"
+                          : rating === 3
+                            ? "Satisfactory"
+                            : rating === 2
+                              ? "Needs Improvement"
+                              : "Poor Experience"}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Review Text */}
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
-                    <Label className="font-black text-xs uppercase tracking-widest text-slate-500">Share your feedback</Label>
-                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold text-slate-400 italic">Optional but helpful</span>
+                  <Label className="font-black text-xs uppercase tracking-widest text-slate-500">
+                    Share your feedback
+                  </Label>
+                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full font-bold text-slate-400 italic">
+                    Optional but helpful
+                  </span>
                 </div>
                 <Textarea
-                  placeholder={`Tell us what was best about working with this ${isFreelancer ? 'client' : 'freelancer'}...`}
+                  placeholder={`Tell us what was best about working with this ${isFreelancer ? "client" : "freelancer"}...`}
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   className="min-h-[120px] rounded-3xl border-slate-100 bg-slate-50/50 p-6 focus:ring-primary/20 transition-all font-medium text-slate-700 placeholder:text-slate-400"
@@ -861,19 +1285,22 @@ export default function BoardPage() {
                 className="w-full h-16 rounded-3xl font-black text-lg tracking-tight bg-primary shadow-xl shadow-primary/30 hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 group"
               >
                 {isCompleting ? (
-                    <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Finishing...
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Finishing...
+                  </div>
                 ) : (
-                    <>
-                        Complete & Share Feedback
-                        <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </>
+                  <>
+                    Complete & Share Feedback
+                    <Send
+                      size={20}
+                      className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
+                    />
+                  </>
                 )}
               </Button>
 
-              <button 
+              <button
                 onClick={() => setShowReviewDialog(false)}
                 className="w-full text-center text-slate-400 text-xs font-black uppercase tracking-widest hover:text-slate-600 transition-colors py-2"
               >
@@ -881,6 +1308,44 @@ export default function BoardPage() {
               </button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+        <DialogContent className="sm:max-w-md p-6 rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">
+              Add Client Feedback
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500 uppercase">
+                Feedback Note
+              </Label>
+              <Textarea
+                placeholder="What needs attention in this list?"
+                value={newFeedback}
+                onChange={(e) => setNewFeedback(e.target.value)}
+                className="resize-none h-32 rounded-xl focus:ring-amber-500/20 bg-slate-50 border-amber-200"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowFeedbackDialog(false)}
+              className="rounded-xl font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddFeedback}
+              disabled={!newFeedback.trim()}
+              className="rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+            >
+              Submit Feedback
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </BaseLayout>
