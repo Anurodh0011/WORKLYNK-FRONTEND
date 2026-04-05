@@ -170,6 +170,7 @@ export default function BoardPage() {
   const isReadOnly =
     isClient ||
     activeMilestone?.status === "PAID" ||
+    activeMilestone?.status === "AWAITING_PAYMENT" ||
     activeMilestone?.status === "IN_REVIEW" ||
     isProjectCompleted;
 
@@ -408,7 +409,7 @@ export default function BoardPage() {
     }
   };
 
-  const handleReviewMilestone = async (status: "PAID" | "PENDING") => {
+  const handleReviewMilestone = async (status: "AWAITING_PAYMENT" | "PENDING") => {
     if (!activeMilestone) return;
     if (status === "PENDING" && !milestoneFeedback.trim()) {
       toast.error("Please provide feedback for revisions.");
@@ -424,7 +425,7 @@ export default function BoardPage() {
       );
       if (response.success) {
         toast.success(
-          `Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`,
+          `Milestone ${status === "AWAITING_PAYMENT" ? "Approved & Awaiting Payment" : "Feedback Sent"}`,
         );
         mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
@@ -432,6 +433,23 @@ export default function BoardPage() {
       }
     } catch (err) {
       toast.error("Failed to review milestone");
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!activeMilestone) return;
+    try {
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/confirm-payment`,
+        { method: "POST" } as any,
+      );
+      if (response.success) {
+        toast.success("Payment confirmed!");
+        mutate(currentKanbanUrl);
+        setShowMilestoneDialog(false);
+      }
+    } catch (err) {
+      toast.error("Failed to confirm payment");
     }
   };
 
@@ -531,7 +549,7 @@ export default function BoardPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span
-                    className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === "PAID" ? "bg-green-100 text-green-700" : m.status === "IN_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                    className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === "PAID" ? "bg-green-100 text-green-700" : m.status === "AWAITING_PAYMENT" ? "bg-blue-100 text-blue-700" : m.status === "IN_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
                   >
                     {m.status}
                   </span>
@@ -650,9 +668,11 @@ export default function BoardPage() {
                         className={
                           activeMilestone.status === "IN_REVIEW"
                             ? "text-amber-500"
-                            : activeMilestone.status === "PAID"
-                              ? "text-green-500"
-                              : "text-primary"
+                            : activeMilestone.status === "AWAITING_PAYMENT"
+                              ? "text-blue-500"
+                              : activeMilestone.status === "PAID"
+                                ? "text-green-500"
+                                : "text-primary"
                         }
                       >
                         {activeMilestone.status}
@@ -672,12 +692,16 @@ export default function BoardPage() {
                     {isClient
                       ? activeMilestone.status === "IN_REVIEW"
                         ? "Review Milestone"
-                        : "View Details"
+                        : activeMilestone.status === "AWAITING_PAYMENT"
+                          ? "Payment Pending"
+                          : "View Details"
                       : activeMilestone.status === "PENDING"
                         ? activeMilestone.clientFeedback
                           ? "Re-Submit Work"
                           : "Submit Work"
-                        : "View Feedback"}
+                        : activeMilestone.status === "AWAITING_PAYMENT"
+                          ? "Confirm Payment"
+                          : "View Feedback"}
                   </Button>
                   {!isClient &&
                     pendingMilestonesCount === 0 &&
@@ -1043,7 +1067,9 @@ export default function BoardPage() {
                 : activeMilestone?.status === "PENDING" &&
                     activeMilestone?.clientFeedback
                   ? "Resubmit Milestone"
-                  : "Milestone Completion"}
+                  : activeMilestone?.status === "AWAITING_PAYMENT"
+                    ? "Confirm Payment"
+                    : "Milestone Completion"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 px-2">
@@ -1156,12 +1182,21 @@ export default function BoardPage() {
                   Send Feedback
                 </Button>
                 <Button
-                  onClick={() => handleReviewMilestone("PAID")}
-                  className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+                  onClick={() => handleReviewMilestone("AWAITING_PAYMENT")}
+                  className="rounded-xl font-bold bg-blue-500 hover:bg-blue-600 px-6 shadow-lg shadow-blue-500/20 text-white"
                 >
                   Approve & Pay
                 </Button>
               </>
+            )}
+
+            {!isClient && activeMilestone?.status === "AWAITING_PAYMENT" && (
+              <Button
+                onClick={handleConfirmPayment}
+                className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+              >
+                Confirm Payment Received
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>
