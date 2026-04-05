@@ -29,6 +29,13 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+const getImageUrl = (path: string, baseUrl: string) => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const base = baseUrl.replace("/api", "");
+  return `${base}/${path.replace(/\\/g, "/")}`;
+};
+
 export default function PublicProfilePage() {
   const params = useParams();
   const userId = params.id;
@@ -43,7 +50,7 @@ export default function PublicProfilePage() {
   const user = profile.user;
   const isFreelancer = user.role === "FREELANCER";
   
-  const platformPortfolio = isFreelancer ? user.freelancerContracts : user.clientContracts;
+  const platformPortfolio = isFreelancer ? user.contractsAsFreelancer : user.contractsAsClient;
 
   return (
     <BaseLayout>
@@ -54,7 +61,7 @@ export default function PublicProfilePage() {
               <CardContent className="pt-6 flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-secondary/20 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg mb-4">
                    {profile?.profilePicture ? (
-                     <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                     <img src={getImageUrl(profile.profilePicture, API_BASE_URL)} alt="Profile" className="w-full h-full object-cover" />
                    ) : (
                      <Camera size={40} className="text-muted-foreground" />
                    )}
@@ -192,10 +199,21 @@ export default function PublicProfilePage() {
 
               {/* Reviews Section */}
               <CardContent className="pt-6 bg-slate-50/50 rounded-b-xl">
-                 <h3 className="font-black text-xl mb-6 flex items-center gap-2 text-slate-800">
-                   <MessageSquare size={20} className="text-primary" /> 
-                   Client Feedback & Reviews
-                 </h3>
+                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+                   <h3 className="font-black text-xl flex items-center gap-2 text-slate-800">
+                     <Star size={20} className="text-primary" /> 
+                     Rating and Review
+                   </h3>
+                   {profile?.averageRating > 0 && (
+                     <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                       <span className="font-black text-slate-800">{profile.averageRating}</span>
+                       <StarRating rating={Math.round(profile.averageRating)} />
+                       <span className="text-xs font-semibold text-slate-500">
+                         ({user.reviewsReceived?.length} {user.reviewsReceived?.length === 1 ? 'rating' : 'ratings'})
+                       </span>
+                     </div>
+                   )}
+                 </div>
                  
                  {user.reviewsReceived && user.reviewsReceived.length > 0 ? (
                    <div className="space-y-6">
@@ -205,7 +223,7 @@ export default function PublicProfilePage() {
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
                                 {review.reviewer?.profile?.profilePicture ? (
-                                  <img src={review.reviewer.profile.profilePicture} className="w-full h-full object-cover" alt={review.reviewer.name} />
+                                  <img src={getImageUrl(review.reviewer.profile.profilePicture, API_BASE_URL)} className="w-full h-full object-cover" alt={review.reviewer.name} />
                                 ) : (
                                   <Camera size={16} className="text-slate-400" />
                                 )}
