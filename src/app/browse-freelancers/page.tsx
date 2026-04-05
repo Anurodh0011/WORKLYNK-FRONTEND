@@ -18,9 +18,11 @@ import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { toast } from "sonner";
 import { Input } from "@/src/components";
 import useSWR from "swr";
+import { useRouter } from "next/navigation";
 
 export default function BrowseFreelancers() {
   const { user }: any = useAuthContext();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const { data, isLoading, mutate } = useSWR(`${API_BASE_URL}/freelancer`, baseFetcher);
   const { data: savedData, mutate: mutateSaved } = useSWR(user?.role === "CLIENT" ? `${API_BASE_URL}/bookmarks/freelancers` : null, baseFetcher);
@@ -145,7 +147,7 @@ export default function BrowseFreelancers() {
                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Hourly Rate</span>
                        <span className="font-extrabold text-lg text-primary">रू {freelancer.profile?.hourlyRate || "0"}/hr</span>
                     </div>
-                    <Button size="sm" className="h-10 px-6 rounded-xl font-bold shadow-lg shadow-primary/20 group/btn">
+                    <Button size="sm" className="h-10 px-6 rounded-xl font-bold shadow-lg shadow-primary/20 group/btn" onClick={() => router.push(`/profile/${freelancer.id}`)}>
                        Profile <ExternalLink size={14} className="ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
                     </Button>
                   </div>
