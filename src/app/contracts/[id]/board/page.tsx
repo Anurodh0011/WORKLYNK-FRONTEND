@@ -54,6 +54,7 @@ interface Task {
   title: string;
   description: string;
   order: number;
+  feedbacks?: any[];
 }
 
 interface ColumnFeedback {
@@ -127,7 +128,7 @@ export default function BoardPage() {
 
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [newFeedback, setNewFeedback] = useState("");
-  const [activeFeedbackColumnId, setActiveFeedbackColumnId] = useState<string | null>(null);
+  const [activeFeedbackTaskId, setActiveFeedbackTaskId] = useState<string | null>(null);
 
   const handleTaskFeedbackChange = (taskId: string, value: string) => {
     // left empty in case there's any ref to it
@@ -136,14 +137,14 @@ export default function BoardPage() {
   // Reverted saveTaskFeedback inline since task level feedback is removed.
 
   const handleAddFeedback = async () => {
-    if (!activeFeedbackColumnId || !newFeedback.trim()) return;
+    if (!activeFeedbackTaskId || !newFeedback.trim()) return;
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${activeFeedbackColumnId}/feedback`, {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/tasks/${activeFeedbackTaskId}/feedback`, {
         arg: { content: newFeedback },
         method: "POST"
       } as any);
       if (response.success) {
-        toast.success("Feedback added");
+        toast.success("Feedback added to task");
         mutate(currentKanbanUrl);
         setShowFeedbackDialog(false);
         setNewFeedback("");
@@ -169,6 +170,7 @@ export default function BoardPage() {
   const isReadOnly =
     isClient ||
     activeMilestone?.status === "PAID" ||
+    activeMilestone?.status === "AWAITING_PAYMENT" ||
     activeMilestone?.status === "IN_REVIEW" ||
     isProjectCompleted;
 
@@ -407,7 +409,7 @@ export default function BoardPage() {
     }
   };
 
-  const handleReviewMilestone = async (status: "PAID" | "PENDING") => {
+  const handleReviewMilestone = async (status: "AWAITING_PAYMENT" | "PENDING") => {
     if (!activeMilestone) return;
     if (status === "PENDING" && !milestoneFeedback.trim()) {
       toast.error("Please provide feedback for revisions.");
@@ -423,7 +425,7 @@ export default function BoardPage() {
       );
       if (response.success) {
         toast.success(
-          `Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`,
+          `Milestone ${status === "AWAITING_PAYMENT" ? "Approved & Awaiting Payment" : "Feedback Sent"}`,
         );
         mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
@@ -431,6 +433,23 @@ export default function BoardPage() {
       }
     } catch (err) {
       toast.error("Failed to review milestone");
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!activeMilestone) return;
+    try {
+      const response = await mutationFetcher(
+        `${API_BASE_URL}/kanban/contracts/${contractId}/milestones/${activeMilestone.id}/confirm-payment`,
+        { method: "POST" } as any,
+      );
+      if (response.success) {
+        toast.success("Payment confirmed!");
+        mutate(currentKanbanUrl);
+        setShowMilestoneDialog(false);
+      }
+    } catch (err) {
+      toast.error("Failed to confirm payment");
     }
   };
 
@@ -530,7 +549,7 @@ export default function BoardPage() {
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <span
-                    className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === "PAID" ? "bg-green-100 text-green-700" : m.status === "IN_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                    className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${m.status === "PAID" ? "bg-green-100 text-green-700" : m.status === "AWAITING_PAYMENT" ? "bg-blue-100 text-blue-700" : m.status === "IN_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
                   >
                     {m.status}
                   </span>
@@ -649,9 +668,11 @@ export default function BoardPage() {
                         className={
                           activeMilestone.status === "IN_REVIEW"
                             ? "text-amber-500"
-                            : activeMilestone.status === "PAID"
-                              ? "text-green-500"
-                              : "text-primary"
+                            : activeMilestone.status === "AWAITING_PAYMENT"
+                              ? "text-blue-500"
+                              : activeMilestone.status === "PAID"
+                                ? "text-green-500"
+                                : "text-primary"
                         }
                       >
                         {activeMilestone.status}
@@ -671,12 +692,16 @@ export default function BoardPage() {
                     {isClient
                       ? activeMilestone.status === "IN_REVIEW"
                         ? "Review Milestone"
-                        : "View Details"
+                        : activeMilestone.status === "AWAITING_PAYMENT"
+                          ? "Payment Pending"
+                          : "View Details"
                       : activeMilestone.status === "PENDING"
                         ? activeMilestone.clientFeedback
                           ? "Re-Submit Work"
                           : "Submit Work"
-                        : "View Feedback"}
+                        : activeMilestone.status === "AWAITING_PAYMENT"
+                          ? "Confirm Payment"
+                          : "View Feedback"}
                   </Button>
                   {!isClient &&
                     pendingMilestonesCount === 0 &&
@@ -811,16 +836,43 @@ export default function BoardPage() {
                                             </p>
                                           )}
 
-                                            {/* Client Feedback Input has been removed card-wise */}
+                                          {/* Task Level Feedback Display */}
+                                          {task.feedbacks && task.feedbacks.length > 0 && (
+                                            <div className="mt-4 space-y-2">
+                                              {task.feedbacks.map((fb: any) => (
+                                                <div key={fb.id} className="bg-amber-50 p-2 rounded-lg border border-amber-100 flex gap-2">
+                                                  <AlertCircle size={12} className="text-amber-600 mt-0.5 shrink-0" />
+                                                  <p className="text-[10px] text-amber-900 leading-tight font-medium">
+                                                    {fb.content}
+                                                  </p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
 
                                           <div className="flex items-center justify-between mt-3">
-                                            <div className="flex -space-x-1">
+                                            <div className="flex items-center gap-2">
                                               <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
                                                 <User
                                                   size={12}
                                                   className="text-primary"
                                                 />
                                               </div>
+                                              {isClient && !isProjectCompleted && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveFeedbackTaskId(task.id);
+                                                    setShowFeedbackDialog(true);
+                                                  }}
+                                                  title="Add feedback to this task"
+                                                >
+                                                  <Plus size={14} />
+                                                </Button>
+                                              )}
                                             </div>
                                             <span className="text-[10px] font-black uppercase text-slate-400">
                                               #TK-{task.id.slice(0, 4)}
@@ -835,49 +887,7 @@ export default function BoardPage() {
                               )}
                             </Droppable>
 
-                            {/* Display Client Feedbacks */ }
-                            {column.feedbacks && column.feedbacks.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-slate-200/60 pb-2 space-y-3 shrink-0">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 flex items-center">
-                                    <AlertCircle size={12} className="mr-1" /> Client Feedback
-                                  </Label>
-                                  <div className="space-y-3 overflow-y-auto max-h-[30vh] custom-scrollbar pr-1">
-                                    {column.feedbacks.map((fb) => (
-                                      <div key={fb.id} className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-200 group relative">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <div className="flex items-center">
-                                            <div className="w-5 h-5 rounded-full border-2 border-white bg-amber-200/50 flex items-center justify-center">
-                                              <User size={10} className="text-amber-700" />
-                                            </div>
-                                            <span className="ml-2 text-[9px] font-black uppercase text-amber-500">
-                                              {new Date(fb.createdAt).toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs text-amber-900 leading-relaxed font-medium whitespace-pre-wrap">
-                                          {fb.content}
-                                        </p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                            )}
-
-                            {/* Client Add Feedback Button */}
-                            {isClient && !isProjectCompleted && (
-                               <div className="mt-2 shrink-0">
-                                  <Button 
-                                    variant="outline" 
-                                    className="w-full h-10 text-xs font-bold text-amber-600 bg-amber-50 hovering:bg-amber-100 border-amber-200 border-dashed"
-                                    onClick={() => {
-                                       setActiveFeedbackColumnId(column.id);
-                                       setShowFeedbackDialog(true);
-                                    }}
-                                  >
-                                     <Plus size={14} className="mr-1" /> Add Feedback Card
-                                  </Button>
-                               </div>
-                            )}
+                            {/* Column feedback UI removed as requested */}
 
                           </div>
                         )}
@@ -1057,7 +1067,9 @@ export default function BoardPage() {
                 : activeMilestone?.status === "PENDING" &&
                     activeMilestone?.clientFeedback
                   ? "Resubmit Milestone"
-                  : "Milestone Completion"}
+                  : activeMilestone?.status === "AWAITING_PAYMENT"
+                    ? "Confirm Payment"
+                    : "Milestone Completion"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4 px-2">
@@ -1170,12 +1182,21 @@ export default function BoardPage() {
                   Send Feedback
                 </Button>
                 <Button
-                  onClick={() => handleReviewMilestone("PAID")}
-                  className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+                  onClick={() => handleReviewMilestone("AWAITING_PAYMENT")}
+                  className="rounded-xl font-bold bg-blue-500 hover:bg-blue-600 px-6 shadow-lg shadow-blue-500/20 text-white"
                 >
                   Approve & Pay
                 </Button>
               </>
+            )}
+
+            {!isClient && activeMilestone?.status === "AWAITING_PAYMENT" && (
+              <Button
+                onClick={handleConfirmPayment}
+                className="rounded-xl font-bold bg-green-500 hover:bg-green-600 px-6 shadow-lg shadow-green-500/20 text-white"
+              >
+                Confirm Payment Received
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -1314,7 +1335,7 @@ export default function BoardPage() {
         <DialogContent className="sm:max-w-md p-6 rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black">
-              Add Client Feedback
+              Add Task Feedback
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1323,7 +1344,7 @@ export default function BoardPage() {
                 Feedback Note
               </Label>
               <Textarea
-                placeholder="What needs attention in this list?"
+                placeholder="What needs improvement in this specific task?"
                 value={newFeedback}
                 onChange={(e) => setNewFeedback(e.target.value)}
                 className="resize-none h-32 rounded-xl focus:ring-amber-500/20 bg-slate-50 border-amber-200"

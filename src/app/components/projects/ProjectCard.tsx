@@ -23,6 +23,7 @@ interface ProjectCardProps {
     duration: string;
     createdAt: string;
     client: {
+      id: string;
       name: string;
       profile?: {
         profilePicture?: string;
@@ -133,17 +134,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
       </CardContent>
 
       <CardFooter className="pt-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link href={`/profile/${project.client.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs border">
-            {project.client.name.charAt(0).toUpperCase()}
+            {project.client.profile?.profilePicture ? (
+              <img src={project.client.profile.profilePicture} alt="Client" className="w-full h-full rounded-full object-cover" />
+            ) : project.client.name.charAt(0).toUpperCase()}
           </div>
           <div>
             <p className="text-xs font-bold leading-none">{project.client.name}</p>
-            <p className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-              <CheckCircle2 size={10} className="text-green-500" /> Payment Verified
+            <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
+              <CheckCircle2 size={10} className="text-green-500" /> Profile
             </p>
           </div>
-        </div>
+        </Link>
         <div className="text-right">
           <Link href={`/projects/${project.id}`}>
             <Button size="sm" className="h-8 px-4 rounded-full shadow-lg shadow-primary/20">
