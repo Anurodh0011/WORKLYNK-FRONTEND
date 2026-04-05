@@ -54,6 +54,7 @@ interface Task {
   title: string;
   description: string;
   order: number;
+  feedbacks?: any[];
 }
 
 interface ColumnFeedback {
@@ -127,7 +128,7 @@ export default function BoardPage() {
 
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [newFeedback, setNewFeedback] = useState("");
-  const [activeFeedbackColumnId, setActiveFeedbackColumnId] = useState<string | null>(null);
+  const [activeFeedbackTaskId, setActiveFeedbackTaskId] = useState<string | null>(null);
 
   const handleTaskFeedbackChange = (taskId: string, value: string) => {
     // left empty in case there's any ref to it
@@ -136,14 +137,14 @@ export default function BoardPage() {
   // Reverted saveTaskFeedback inline since task level feedback is removed.
 
   const handleAddFeedback = async () => {
-    if (!activeFeedbackColumnId || !newFeedback.trim()) return;
+    if (!activeFeedbackTaskId || !newFeedback.trim()) return;
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/columns/${activeFeedbackColumnId}/feedback`, {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/tasks/${activeFeedbackTaskId}/feedback`, {
         arg: { content: newFeedback },
         method: "POST"
       } as any);
       if (response.success) {
-        toast.success("Feedback added");
+        toast.success("Feedback added to task");
         mutate(currentKanbanUrl);
         setShowFeedbackDialog(false);
         setNewFeedback("");
@@ -811,16 +812,43 @@ export default function BoardPage() {
                                             </p>
                                           )}
 
-                                            {/* Client Feedback Input has been removed card-wise */}
+                                          {/* Task Level Feedback Display */}
+                                          {task.feedbacks && task.feedbacks.length > 0 && (
+                                            <div className="mt-4 space-y-2">
+                                              {task.feedbacks.map((fb: any) => (
+                                                <div key={fb.id} className="bg-amber-50 p-2 rounded-lg border border-amber-100 flex gap-2">
+                                                  <AlertCircle size={12} className="text-amber-600 mt-0.5 shrink-0" />
+                                                  <p className="text-[10px] text-amber-900 leading-tight font-medium">
+                                                    {fb.content}
+                                                  </p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
 
                                           <div className="flex items-center justify-between mt-3">
-                                            <div className="flex -space-x-1">
+                                            <div className="flex items-center gap-2">
                                               <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
                                                 <User
                                                   size={12}
                                                   className="text-primary"
                                                 />
                                               </div>
+                                              {isClient && !isProjectCompleted && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveFeedbackTaskId(task.id);
+                                                    setShowFeedbackDialog(true);
+                                                  }}
+                                                  title="Add feedback to this task"
+                                                >
+                                                  <Plus size={14} />
+                                                </Button>
+                                              )}
                                             </div>
                                             <span className="text-[10px] font-black uppercase text-slate-400">
                                               #TK-{task.id.slice(0, 4)}
@@ -835,49 +863,7 @@ export default function BoardPage() {
                               )}
                             </Droppable>
 
-                            {/* Display Client Feedbacks */ }
-                            {column.feedbacks && column.feedbacks.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-slate-200/60 pb-2 space-y-3 shrink-0">
-                                  <Label className="text-[10px] font-black uppercase text-slate-400 mb-2 flex items-center">
-                                    <AlertCircle size={12} className="mr-1" /> Client Feedback
-                                  </Label>
-                                  <div className="space-y-3 overflow-y-auto max-h-[30vh] custom-scrollbar pr-1">
-                                    {column.feedbacks.map((fb) => (
-                                      <div key={fb.id} className="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-200 group relative">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <div className="flex items-center">
-                                            <div className="w-5 h-5 rounded-full border-2 border-white bg-amber-200/50 flex items-center justify-center">
-                                              <User size={10} className="text-amber-700" />
-                                            </div>
-                                            <span className="ml-2 text-[9px] font-black uppercase text-amber-500">
-                                              {new Date(fb.createdAt).toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs text-amber-900 leading-relaxed font-medium whitespace-pre-wrap">
-                                          {fb.content}
-                                        </p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                            )}
-
-                            {/* Client Add Feedback Button */}
-                            {isClient && !isProjectCompleted && (
-                               <div className="mt-2 shrink-0">
-                                  <Button 
-                                    variant="outline" 
-                                    className="w-full h-10 text-xs font-bold text-amber-600 bg-amber-50 hovering:bg-amber-100 border-amber-200 border-dashed"
-                                    onClick={() => {
-                                       setActiveFeedbackColumnId(column.id);
-                                       setShowFeedbackDialog(true);
-                                    }}
-                                  >
-                                     <Plus size={14} className="mr-1" /> Add Feedback Card
-                                  </Button>
-                               </div>
-                            )}
+                            {/* Column feedback UI removed as requested */}
 
                           </div>
                         )}
@@ -1314,7 +1300,7 @@ export default function BoardPage() {
         <DialogContent className="sm:max-w-md p-6 rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black">
-              Add Client Feedback
+              Add Task Feedback
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1323,7 +1309,7 @@ export default function BoardPage() {
                 Feedback Note
               </Label>
               <Textarea
-                placeholder="What needs attention in this list?"
+                placeholder="What needs improvement in this specific task?"
                 value={newFeedback}
                 onChange={(e) => setNewFeedback(e.target.value)}
                 className="resize-none h-32 rounded-xl focus:ring-amber-500/20 bg-slate-50 border-amber-200"
