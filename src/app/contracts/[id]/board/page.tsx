@@ -50,9 +50,11 @@ import { toast } from "sonner";
 
 interface Task {
   id: string;
+  columnId: string;
   title: string;
-  description?: string;
+  description: string;
   order: number;
+  clientFeedback?: string;
 }
 
 interface Column {
@@ -61,6 +63,7 @@ interface Column {
   color?: string;
   order: number;
   tasks: Task[];
+  clientFeedback?: string;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -92,10 +95,12 @@ export default function BoardPage() {
     null,
   );
 
+  const currentKanbanUrl = selectedMilestoneId
+    ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}`
+    : `${API_BASE_URL}/kanban/${contractId}`;
+
   const { data: kanbanData, error, isLoading } = useSWR(
-    selectedMilestoneId
-      ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}`
-      : `${API_BASE_URL}/kanban/${contractId}`,
+    currentKanbanUrl,
     baseFetcher,
   );
 
@@ -115,6 +120,57 @@ export default function BoardPage() {
   } | null>(null);
   const [newColumn, setNewColumn] = useState({ name: "", color: "slate" });
 
+  const [columnFeedbacks, setColumnFeedbacks] = useState<Record<string, string>>({});
+  const [savingFeedback, setSavingFeedback] = useState<string | null>(null);
+
+  const [taskFeedbacks, setTaskFeedbacks] = useState<Record<string, string>>({});
+  const [savingTaskFeedback, setSavingTaskFeedback] = useState<string | null>(null);
+
+  const handleColumnFeedbackChange = (columnId: string, value: string) => {
+    setColumnFeedbacks((prev) => ({ ...prev, [columnId]: value }));
+  };
+
+  const handleTaskFeedbackChange = (taskId: string, value: string) => {
+    setTaskFeedbacks((prev) => ({ ...prev, [taskId]: value }));
+  };
+
+  const saveTaskFeedback = async (taskId: string) => {
+    setSavingTaskFeedback(taskId);
+    try {
+      await mutationFetcher(
+        `${API_BASE_URL}/kanban/tasks/${taskId}/feedback`,
+        {
+          arg: { feedback: taskFeedbacks[taskId] },
+          method: "PATCH",
+        } as any,
+      );
+      toast.success("Feedback saved");
+    } catch (err) {
+      toast.error("Failed to save feedback");
+    } finally {
+      setSavingTaskFeedback(null);
+    }
+  };
+
+  const saveColumnFeedback = async (columnId: string) => {
+    setSavingFeedback(columnId);
+    try {
+      await mutationFetcher(
+        `${API_BASE_URL}/kanban/columns/${columnId}/feedback`,
+        {
+          arg: { feedback: columnFeedbacks[columnId] },
+          method: "PATCH",
+        } as any,
+      );
+      toast.success("Feedback saved");
+    } catch (err) {
+      toast.error("Failed to save feedback");
+    } finally {
+      setSavingFeedback(null);
+    }
+  };
+
+
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false);
   const [milestoneNotes, setMilestoneNotes] = useState("");
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
@@ -126,14 +182,31 @@ export default function BoardPage() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
 
+  const isProjectCompleted = kanbanData?.data?.contract?.status === "COMPLETED";
+
   const isReadOnly =
     isClient ||
     activeMilestone?.status === "PAID" ||
-    activeMilestone?.status === "IN_REVIEW";
+    activeMilestone?.status === "IN_REVIEW" ||
+    isProjectCompleted;
 
   useEffect(() => {
     if (kanbanData?.data) {
       setColumns(kanbanData.data.columns);
+
+      const fb: Record<string, string> = {};
+      const tFb: Record<string, string> = {};
+      kanbanData.data.columns.forEach((col: any) => {
+        if (col.clientFeedback) fb[col.id] = col.clientFeedback;
+        if (col.tasks) {
+          col.tasks.forEach((task: any) => {
+            if (task.clientFeedback) tFb[task.id] = task.clientFeedback;
+          });
+        }
+      });
+      setColumnFeedbacks(fb);
+      setTaskFeedbacks(tFb);
+
       if (kanbanData.data.contract?.project?.title) {
         setProjectTitle(kanbanData.data.contract.project.title);
       }
@@ -200,7 +273,7 @@ export default function BoardPage() {
         );
       } catch (err) {
         toast.error("Failed to move container");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`); // Rollback
+        mutate(currentKanbanUrl); // Rollback
       }
       return;
     }
@@ -244,7 +317,7 @@ export default function BoardPage() {
       );
     } catch (err) {
       toast.error("Failed to move task");
-      mutate(`${API_BASE_URL}/kanban/${contractId}`); // Rollback
+      mutate(currentKanbanUrl); // Rollback
     }
   };
 
@@ -263,7 +336,7 @@ export default function BoardPage() {
 
       if (response.success) {
         toast.success("Task created");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowTaskDialog(false);
         setNewTask({ title: "", description: "" });
       }
@@ -285,8 +358,8 @@ export default function BoardPage() {
       );
 
       if (response.success) {
-        toast.success("Column renamed");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        toast.success("Container renamed");
+        mutate(currentKanbanUrl);
         setShowColumnDialog(false);
       }
     } catch (err) {
@@ -309,11 +382,7 @@ export default function BoardPage() {
 
       if (response.success) {
         toast.success("Column created");
-        mutate(
-          selectedMilestoneId
-            ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}`
-            : `${API_BASE_URL}/kanban/${contractId}`,
-        );
+        mutate(currentKanbanUrl);
         setShowCreateColumnDialog(false);
         setNewColumn({ name: "", color: "slate" });
       }
@@ -339,11 +408,7 @@ export default function BoardPage() {
 
       if (response && response.success !== false) {
         toast.success("Container deleted");
-        mutate(
-          selectedMilestoneId
-            ? `${API_BASE_URL}/kanban/${contractId}?milestoneId=${selectedMilestoneId}`
-            : `${API_BASE_URL}/kanban/${contractId}`,
-        );
+        mutate(currentKanbanUrl);
       }
     } catch (err) {
       toast.error("Failed to delete container");
@@ -361,7 +426,7 @@ export default function BoardPage() {
       );
       if (response.success) {
         toast.success("Milestone submitted for review");
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
       }
     } catch (err) {
@@ -387,7 +452,7 @@ export default function BoardPage() {
         toast.success(
           `Milestone ${status === "PAID" ? "Approved" : "Feedback Sent"}`,
         );
-        mutate(`${API_BASE_URL}/kanban/${contractId}`);
+        mutate(currentKanbanUrl);
         setShowMilestoneDialog(false);
         setMilestoneFeedback("");
       }
@@ -505,9 +570,14 @@ export default function BoardPage() {
           </div>
 
           {/* Completion Action Footer */}
-          {isFreelancer &&
+          {isProjectCompleted ? (
+            <div className="p-4 border-t border-slate-100 bg-green-50 flex items-center justify-center text-green-600 font-black tracking-widest text-xs uppercase py-6 border-b">
+               <CheckCircle2 className="mr-2" size={16} /> COMPLETED
+            </div>
+          ) : (
+            isFreelancer &&
             milestones.length > 0 &&
-            milestones.every((m) => m.status === "PAID") && (
+            milestones.every((m: any) => m.status === "PAID") && (
               <div className="p-4 border-t border-slate-100 bg-white">
                 <Button
                   onClick={handleCompleteProject}
@@ -517,7 +587,8 @@ export default function BoardPage() {
                   MARK COMPLETED
                 </Button>
               </div>
-            )}
+            )
+          )}
 
           {/* User Info Section */}
           <div className="p-4 border-t border-slate-200 bg-white shrink-0">
@@ -579,6 +650,12 @@ export default function BoardPage() {
                   <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
                     <Calendar size={14} className="text-primary" />
                     Started: {new Date(kanbanData.data.contract.startDate).toLocaleDateString()}
+                  </span>
+                )}
+                {kanbanData?.data?.contract?.endDate && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-md">
+                    <CheckCircle2 size={14} className="text-green-600" />
+                    Completed: {new Date(kanbanData.data.contract.endDate).toLocaleDateString()}
                   </span>
                 )}
               </div>
@@ -697,7 +774,7 @@ export default function BoardPage() {
                                   {column.tasks.length}
                                 </span>
                               </h3>
-                              {!isClient && (
+                              {!isReadOnly && (
                                 <div className="flex items-center">
                                   <Button
                                     variant="ghost"
@@ -756,11 +833,49 @@ export default function BoardPage() {
                                             {task.title}
                                           </h4>
                                           {task.description && (
-                                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                                            <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">
                                               {task.description}
                                             </p>
                                           )}
-                                          <div className="flex items-center justify-between">
+
+                                          {/* Client Feedback Input */}
+                                          {isClient && !isProjectCompleted ? (
+                                            <div className="mt-3 pt-3 border-t border-slate-100">
+                                              <Label className="text-[9px] font-black uppercase text-slate-400 mb-1.5 flex items-center justify-between">
+                                                <span>Client Feedback</span>
+                                                {savingTaskFeedback === task.id && (
+                                                  <span className="text-primary italic normal-case font-bold">Saving...</span>
+                                                )}
+                                              </Label>
+                                              <Textarea
+                                                placeholder="Feedback..."
+                                                className="text-xs min-h-[60px] max-h-[80px] overflow-y-auto cursor-text p-2 rounded-xl border border-slate-200 bg-white shadow-sm resize-none focus:ring-primary/20"
+                                                value={taskFeedbacks[task.id] || ""}
+                                                onChange={(e) =>
+                                                  handleTaskFeedbackChange(task.id, e.target.value)
+                                                }
+                                                onBlur={() => {
+                                                  if (taskFeedbacks[task.id] !== task.clientFeedback) {
+                                                    saveTaskFeedback(task.id);
+                                                  }
+                                                }}
+                                                onMouseDown={(e) => e.stopPropagation()} 
+                                              />
+                                            </div>
+                                          ) : (
+                                            (taskFeedbacks[task.id] || task.clientFeedback) ? (
+                                              <div className="mt-3 pt-3 border-t border-slate-100">
+                                                <Label className="text-[9px] font-black uppercase text-amber-600 mb-1.5 flex items-center">
+                                                  <AlertCircle size={10} className="mr-1" /> Client Feedback
+                                                </Label>
+                                                <div className="bg-amber-50/80 text-xs p-2 rounded-lg border border-amber-100/50 text-amber-800 font-medium max-h-[80px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                                                  {taskFeedbacks[task.id] || task.clientFeedback}
+                                                </div>
+                                              </div>
+                                            ) : null
+                                          )}
+
+                                          <div className="flex items-center justify-between mt-3">
                                             <div className="flex -space-x-1">
                                               <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
                                                 <User
@@ -781,6 +896,45 @@ export default function BoardPage() {
                                 </div>
                               )}
                             </Droppable>
+
+                            {/* Client Feedback Input */}
+                            {isClient && !isProjectCompleted ? (
+                              <div className="mt-2 shrink-0">
+                                <Label className="text-[10px] font-black uppercase text-amber-600 mb-2 flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <AlertCircle size={12} className="mr-1" /> Client Feedback
+                                  </div>
+                                  {savingFeedback === column.id && (
+                                    <span className="text-primary italic normal-case font-bold">Saving...</span>
+                                  )}
+                                </Label>
+                                <Textarea
+                                  placeholder="Add feedback for this list..."
+                                  className="text-xs min-h-[60px] max-h-[20vh] overflow-y-auto custom-scrollbar p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 shadow-sm resize-none focus:ring-amber-400/20 placeholder:text-amber-700/40 font-medium"
+                                  value={columnFeedbacks[column.id] || ""}
+                                  onChange={(e) =>
+                                    handleColumnFeedbackChange(column.id, e.target.value)
+                                  }
+                                  onBlur={() => {
+                                    if (columnFeedbacks[column.id] !== column.clientFeedback) {
+                                      saveColumnFeedback(column.id);
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              (columnFeedbacks[column.id] || column.clientFeedback) ? (
+                                <div className="mt-2 shrink-0">
+                                  <Label className="text-[10px] font-black uppercase text-amber-600 mb-2 flex items-center">
+                                    <AlertCircle size={12} className="mr-1" /> Client Feedback
+                                  </Label>
+                                  <div className="bg-amber-50 text-amber-900 text-xs p-4 rounded-xl shadow-sm border border-amber-200 font-medium max-h-[20vh] overflow-y-auto custom-scrollbar whitespace-pre-wrap leading-relaxed">
+                                    {columnFeedbacks[column.id] || column.clientFeedback}
+                                  </div>
+                                </div>
+                              ) : null
+                            )}
+
                           </div>
                         )}
                       </Draggable>
