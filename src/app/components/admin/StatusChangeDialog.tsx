@@ -31,6 +31,7 @@ export default function StatusChangeDialog({
 }: StatusChangeDialogProps) {
   const [newStatus, setNewStatus] = useState<string>(initialStatus || user?.status || "ACTIVE");
   const [remarks, setRemarks] = useState<string>("");
+  const [suspensionDuration, setSuspensionDuration] = useState<string>("7");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -44,7 +45,11 @@ export default function StatusChangeDialog({
       const res = await fetch(`${API_BASE_URL}/admin/users/${user.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, remarks }),
+        body: JSON.stringify({ 
+          status: newStatus, 
+          remarks,
+          suspensionDuration: newStatus === "SUSPENDED" ? suspensionDuration : null
+        }),
         credentials: "include",
       });
 
@@ -72,34 +77,58 @@ export default function StatusChangeDialog({
       className="max-w-md sm:rounded-3xl"
     >
       <div className="space-y-6 pt-2">
-        <div className="space-y-2">
-          <label className="text-sm font-black text-slate-700 uppercase tracking-wider">
-            New Account Status
-          </label>
-          <Select value={newStatus} onValueChange={setNewStatus}>
-            <SelectTrigger className="rounded-xl border-slate-200 h-12 font-bold shadow-sm">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="ACTIVE" className="font-bold text-green-600">Active</SelectItem>
-              <SelectItem value="SUSPENDED" className="font-bold text-yellow-600">Suspended</SelectItem>
-              <SelectItem value="DEACTIVATED" className="font-bold text-red-600">Deactivated</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+              New Account Status
+            </label>
+            <Select value={newStatus} onValueChange={setNewStatus}>
+              <SelectTrigger className="rounded-xl border-slate-200 h-11 font-bold shadow-sm">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="ACTIVE" className="font-bold text-green-600">Active</SelectItem>
+                <SelectItem value="SUSPENDED" className="font-bold text-yellow-600">Suspended</SelectItem>
+                <SelectItem value="DEACTIVATED" className="font-bold text-red-600">Deactivated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {newStatus === "SUSPENDED" && (
+            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                Duration (Days)
+              </label>
+              <Select value={suspensionDuration} onValueChange={setSuspensionDuration}>
+                <SelectTrigger className="rounded-xl border-slate-200 h-11 font-bold shadow-sm">
+                  <SelectValue placeholder="Days" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="7" className="font-bold">7 Days</SelectItem>
+                  <SelectItem value="10" className="font-bold">10 Days</SelectItem>
+                  <SelectItem value="15" className="font-bold">15 Days</SelectItem>
+                  <SelectItem value="30" className="font-bold">30 Days</SelectItem>
+                  <SelectItem value="60" className="font-bold">60 Days</SelectItem>
+                  <SelectItem value="90" className="font-bold">90 Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-black text-slate-700 uppercase tracking-wider">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
             Remarks / Reason
           </label>
           <Textarea
             placeholder="Provide a reason for this status change..."
-            className="rounded-xl border-slate-200 min-h-[100px] font-medium focus-visible:ring-primary/20"
+            className="rounded-2xl border-slate-200 min-h-[120px] font-medium focus-visible:ring-primary/20 resize-none shadow-sm"
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
           />
-          <p className="text-[10px] text-muted-foreground font-semibold italic">
-            * These remarks will be visible in the status history log.
+          <p className="text-[10px] text-muted-foreground font-semibold italic flex items-center gap-1 opacity-70">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Visible in status history audit log
           </p>
         </div>
 
@@ -124,3 +153,4 @@ export default function StatusChangeDialog({
     </AdminDialog>
   );
 }
+

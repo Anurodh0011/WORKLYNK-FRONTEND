@@ -57,12 +57,19 @@ export default function StatusHistoryDialog({
                   
                   <div className="bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-all">
                     <div className="flex justify-between items-start mb-2">
-                       <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black tracking-wider uppercase ${
-                         item.status === 'ACTIVE' ? 'bg-green-50 text-green-700' :
-                         item.status === 'SUSPENDED' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
-                       }`}>
-                         {item.status}
-                       </span>
+                       <div className="flex items-center gap-2">
+                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black tracking-wider uppercase ${
+                           item.status === 'ACTIVE' ? 'bg-green-50 text-green-700' :
+                           item.status === 'SUSPENDED' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
+                         }`}>
+                           {item.status}
+                         </span>
+                         {item.suspensionDuration && (
+                           <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-black tracking-widest uppercase">
+                             {item.suspensionDuration} Days
+                           </span>
+                         )}
+                       </div>
                        <div className="flex items-center text-[10px] font-bold text-slate-400">
                          <Calendar size={12} className="mr-1" />
                          {format(dateObj, "MMM d, yyyy • h:mm a")}

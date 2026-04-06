@@ -176,20 +176,14 @@ export default function UsersTable() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl w-48">
-            <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase">User Operations</DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
               <Users size={14} className="mr-2" /> View Profile
             </DropdownMenuItem>
-            <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
-              <Mail size={14} className="mr-2" /> Send Message
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="font-bold text-slate-700 rounded-lg"
               onClick={() => { setSelectedUser(user); setIsStatusHistoryOpen(true); }}
             >
-              <ScrollText size={14} className="mr-2" /> Status History
+              <History size={14} className="mr-2" /> Status History
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="font-bold text-red-600 focus:bg-red-50 rounded-lg"
