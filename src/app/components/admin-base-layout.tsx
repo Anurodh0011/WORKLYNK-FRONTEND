@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { Button } from "@/src/app/components/ui/button";
 import { toast } from "sonner";
-import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/src/lib/utils";
 
@@ -16,7 +16,15 @@ interface AdminBaseLayoutProps {
 const ADMIN_MENU = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Verifications", href: "/admin/verifications", icon: ShieldCheck },
-  { name: "User Management", href: "/admin/users", icon: User },
+  { 
+    name: "User Management", 
+    href: "/admin/user-management", 
+    icon: User,
+    submenus: [
+      { name: "Dashboard", href: "/admin/user-management/user-dashboard" },
+      { name: "All Users", href: "/admin/user-management" }
+    ]
+  },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -24,6 +32,27 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, logout }: any = useAuthContext();
+
+  // State for collapsible menus
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  // Automatically expand menu if a sub-route is active on initial load
+  useEffect(() => {
+    const activeMenu = ADMIN_MENU.find(item => 
+      item.submenus && pathname.startsWith(item.href)
+    );
+    if (activeMenu && !expandedMenus.includes(activeMenu.name)) {
+      setExpandedMenus(prev => [...prev, activeMenu.name]);
+    }
+  }, [pathname]);
+
+  const toggleMenu = (name: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(name) 
+        ? prev.filter(n => n !== name) 
+        : [...prev, name]
+    );
+  };
 
   const handleLogout = async () => {
     try {
@@ -52,29 +81,83 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm">
+      <aside className="w-76 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm">
         <div className="p-6 border-b flex items-center justify-center">
           <h1 className="text-2xl font-black text-primary tracking-tight">WorkLynk</h1>
           <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase">Admin</span>
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {ADMIN_MENU.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isSubItemActive = item.submenus?.some(sub => pathname === sub.href);
+            const isParentActive = pathname === item.href;
+            const isExpanded = expandedMenus.includes(item.name);
+            const isActive = isParentActive || isSubItemActive;
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center space-x-3 p-3 rounded-xl transition-all duration-200",
-                  isActive 
-                    ? "bg-primary text-white font-bold shadow-md shadow-primary/20" 
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-semibold"
+              <div key={item.name} className="space-y-1">
+                {item.submenus ? (
+                  <button
+                    onClick={() => toggleMenu(item.name)}
+                    className={cn(
+                      "w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 cursor-pointer",
+                      isActive
+                        ? "bg-primary/5 text-primary font-bold border-l-4 border-primary rounded-l-none"
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-semibold"
+                    )}
+                  >
+                    <item.icon size={20} className={cn(isActive ? "text-primary" : "text-slate-400")} />
+                    <span className="flex-1 text-left">{item.name}</span>
+                    <ChevronDown 
+                      size={16} 
+                      className={cn(
+                        "transition-transform duration-300",
+                        isExpanded ? "rotate-180" : "rotate-0"
+                      )} 
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center space-x-3 p-3 rounded-xl transition-all duration-200",
+                      isActive 
+                        ? "bg-primary text-white font-bold shadow-md shadow-primary/20" 
+                        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-semibold"
+                    )}
+                  >
+                    <item.icon size={20} />
+                    <span>{item.name}</span>
+                    {isActive && <ChevronRight size={16} className="ml-auto" />}
+                  </Link>
                 )}
-              >
-                <item.icon size={20} />
-                <span>{item.name}</span>
-                {isActive && <ChevronRight size={16} className="ml-auto" />}
-              </Link>
+
+                {item.submenus && (
+                  <div 
+                    className={cn(
+                      "ml-8 space-y-1 border-l-2 border-slate-100 pl-4 overflow-hidden transition-all duration-300 ease-in-out",
+                      isExpanded ? "max-h-40 opacity-100 py-1" : "max-h-0 opacity-0 py-0"
+                    )}
+                  >
+                    {item.submenus.map(sub => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link 
+                          key={sub.name}
+                          href={sub.href}
+                          className={cn(
+                            "block py-2 px-3 text-sm rounded-lg transition-colors border border-transparent",
+                            isSubActive 
+                              ? "bg-primary/5 text-primary font-bold border-primary/20 shadow-sm" 
+                              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100 font-medium"
+                          )}
+                        >
+                          {sub.name}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
