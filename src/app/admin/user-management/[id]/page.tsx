@@ -28,6 +28,7 @@ import {
   MoreVertical,
   MessageSquare,
   Clock,
+  CheckCircle2,
   User as UserIcon
 } from "lucide-react";
 import { format } from "date-fns";
@@ -85,48 +86,46 @@ export default function UserDetailPage() {
               <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-tight">{userData.name}</h1>
             </div>
           </div>
-          <Badge className={`rounded-xl font-black px-6 py-2 shadow-lg tracking-widest text-[10px] uppercase ${
-            userData.status === 'ACTIVE' ? 'bg-green-500 text-white' : 
-            userData.status === 'SUSPENDED' ? 'bg-orange-500 text-white' : 
-            'bg-slate-500 text-white'
-          }`}>
-            {userData.status}
-          </Badge>
+          <div className="flex items-center gap-4">
+            <Badge className={`rounded-xl font-black px-6 py-2 shadow-lg tracking-widest text-[10px] uppercase border-none ${
+              userData.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 
+              userData.status === 'SUSPENDED' ? 'bg-orange-100 text-orange-700' : 
+              userData.status === 'DEACTIVATED' ? 'bg-red-100 text-red-700' :
+              'bg-slate-100 text-slate-500'
+            }`}>
+              {userData.status}
+            </Badge>
+          </div>
         </div>
 
         {/* TOP SECTION: PROFILE & KPIs */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* User Profile Summary */}
-          <Card className="lg:col-span-1 border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden p-8 flex flex-col items-center text-center">
-            <div className="w-32 h-32 rounded-[2rem] bg-slate-50 border-4 border-white shadow-2xl relative mb-6 overflow-hidden">
+          <Card className="lg:col-span-1 border-none shadow-xl bg-white rounded-[2rem] overflow-hidden p-6 flex flex-col items-center text-center">
+            <div className="w-24 h-24 rounded-[1.5rem] bg-slate-50 border-4 border-white shadow-2xl relative mb-4 overflow-hidden">
                {userData.profile?.profilePicture ? (
                  <img src={`${BACKEND_URL}/${userData.profile.profilePicture}`} className="w-full h-full object-cover" alt="" />
                ) : (
-                 <div className="w-full h-full flex items-center justify-center text-5xl font-black text-slate-200">{userData.name.charAt(0)}</div>
-               )}
-               {userData.profile?.verificationStatus === 'VERIFIED' && (
-                 <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1.5 rounded-xl border-4 border-white shadow-lg">
-                    <ShieldCheck size={16} />
-                 </div>
+                 <div className="w-full h-full flex items-center justify-center text-4xl font-black text-slate-200">{userData.name.charAt(0)}</div>
                )}
             </div>
             
-            <h2 className="text-xl font-black text-slate-800 leading-tight mb-1">{userData.name}</h2>
-            <p className="text-xs font-black text-primary uppercase tracking-widest mb-6">{userData.role}</p>
+            <h2 className="text-lg font-black text-slate-800 leading-tight mb-1">{userData.name}</h2>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">{userData.role}</p>
             
-            <div className="w-full space-y-4 pt-6 border-t border-slate-50">
+            <div className="w-full space-y-3 pt-4 border-t border-slate-50">
                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-slate-50 rounded-lg text-slate-400"><Mail size={14} /></div>
+                  <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400"><Mail size={12} /></div>
                   <div className="truncate flex-1">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Email Terminal</p>
-                    <p className="text-xs font-bold text-slate-600 truncate">{userData.email}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                    <p className="text-[11px] font-bold text-slate-600 truncate">{userData.email}</p>
                   </div>
                </div>
                <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-slate-50 rounded-lg text-slate-400"><Calendar size={14} /></div>
+                  <div className="p-1.5 bg-slate-50 rounded-lg text-slate-400"><Calendar size={12} /></div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Member Since</p>
-                    <p className="text-xs font-bold text-slate-600">{format(new Date(userData.createdAt), "MMM d, yyyy")}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Member Since</p>
+                    <p className="text-[11px] font-bold text-slate-600">{format(new Date(userData.createdAt), "MMM d, yyyy")}</p>
                   </div>
                </div>
             </div>
@@ -134,59 +133,69 @@ export default function UserDetailPage() {
 
           {/* Performance KPIs */}
           <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-6">
-             <Card className="border-none shadow-xl bg-slate-900 text-white rounded-[2rem] p-8 flex flex-col justify-between group overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary/40 transition-all duration-700" />
-                <div className="p-3 bg-white/10 rounded-2xl w-fit mb-4"><DollarSign size={24} className="text-blue-400" /></div>
+             <Card className="border-none shadow-xl bg-slate-900 text-white rounded-[2rem] p-6 flex flex-col justify-between group overflow-hidden relative min-h-[140px]">
+                <div className="p-3 bg-white/10 rounded-2xl w-fit mb-2"><DollarSign size={20} className="text-blue-400" /></div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Lifetime Settlements</p>
-                   <h3 className="text-4xl font-black tracking-tight">रू {metrics?.totalEarnings?.toLocaleString() || "0"}</h3>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Lifetime {userData.role === 'CLIENT' ? 'Spend' : 'Settlements'}</p>
+                   <h3 className="text-3xl font-black tracking-tight">रू {metrics?.totalEarnings?.toLocaleString() || "0"}</h3>
                 </div>
              </Card>
 
-             <Card className="border-none shadow-xl bg-white rounded-[2rem] p-8 flex flex-col justify-between overflow-hidden relative">
-                <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl w-fit mb-4"><Star size={24} /></div>
+             <Card className="border-none shadow-xl bg-white rounded-[2rem] p-6 flex flex-col justify-between overflow-hidden relative min-h-[140px]">
+                <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl w-fit mb-2"><Star size={20} /></div>
                 <div>
-                   <div className="flex items-center gap-2 mb-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reputation Score</p>
-                   </div>
-                   <h3 className="text-4xl font-black tracking-tight text-slate-800">{metrics?.averageRating?.toFixed(1) || "0.0"}</h3>
-                   <div className="flex items-center gap-1 mt-2">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                         <Star key={s} size={12} className={s <= Math.round(metrics?.averageRating || 0) ? "fill-orange-400 text-orange-400" : "fill-slate-100 text-slate-100"} />
-                      ))}
-                      <span className="text-[10px] font-bold text-slate-400 ml-2">({userData.reviewsReceived.length} reviews)</span>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Rating and Reviews</p>
+                   <div className="flex items-center gap-3">
+                      <h3 className="text-3xl font-black tracking-tight text-slate-800">{metrics?.averageRating?.toFixed(1) || "0.0"}</h3>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-0.5">
+                           {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} size={10} className={s <= Math.round(metrics?.averageRating || 0) ? "fill-orange-400 text-orange-400" : "fill-slate-100 text-slate-100"} />
+                           ))}
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{userData.reviewsReceived.length} Total Internal Reviews</span>
+                      </div>
                    </div>
                 </div>
              </Card>
 
-             <Card className="border-none shadow-xl bg-white rounded-[2rem] p-8 flex flex-col justify-between overflow-hidden relative">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl w-fit mb-4"><TrendingUp size={24} /></div>
+             <Card className="border-none shadow-xl bg-white rounded-[2rem] p-6 flex flex-col justify-between overflow-hidden relative min-h-[140px]">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl w-fit mb-2">
+                   {userData.role === 'CLIENT' ? <CheckCircle2 size={20} /> : <TrendingUp size={20} />}
+                </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Audit Conversion Rate</p>
-                   <h3 className="text-4xl font-black tracking-tight text-slate-800">{metrics?.conversionRate}%</h3>
-                   <p className="text-[10px] font-bold text-slate-400 mt-2">
-                      <span className="font-black text-blue-600">{metrics?.approvedContracts}</span> out of <span className="font-black text-slate-800">{metrics?.totalApplications}</span> proposals approved
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                      {userData.role === 'CLIENT' ? 'Project Completion Rate' : 'Audit Conversion Rate'}
+                   </p>
+                   <h3 className="text-3xl font-black tracking-tight text-slate-800">
+                      {userData.role === 'CLIENT' ? metrics.completionRate : `${metrics.conversionRate}%`}
+                   </h3>
+                   <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
+                      {userData.role === 'CLIENT' 
+                        ? `${metrics.completedProjects} of ${metrics.projectsCount} Projects Finalized`
+                        : `${metrics.approvedContracts} of ${metrics.totalApplications} proposals approved`
+                      }
                    </p>
                 </div>
              </Card>
 
              {/* Secondary Row KPIs */}
-             <div className="col-span-full grid grid-cols-1 sm:grid-cols-4 gap-6">
-                <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-center">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Projects Directory</p>
-                   <p className="text-lg font-black text-slate-800">{metrics?.projectsCount || 0}</p>
+             <div className="col-span-full grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-col justify-center">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Projects Directory</p>
+                   <p className="text-base font-black text-slate-800">{metrics?.projectsCount || 0}</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-center">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Presence</p>
-                   <p className="text-lg font-black text-slate-800">{(metrics?.approvedContracts > 0) ? "High" : "Standard"}</p>
+                <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-col justify-center">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Presence</p>
+                   <p className="text-base font-black text-slate-800">{(metrics?.approvedContracts > 0 || metrics?.projectsCount > 0) ? "High" : "Standard"}</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-center">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Transmission</p>
-                   <p className="text-lg font-black text-slate-800">{userData.lastLoginAt ? format(new Date(userData.lastLoginAt), "MMM d") : "Unknown"}</p>
+                <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-col justify-center">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Transmission</p>
+                   <p className="text-base font-black text-slate-800">{userData.lastLoginAt ? format(new Date(userData.lastLoginAt), "MMM d") : "Unknown"}</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-center">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Identity Check</p>
-                   <Badge className={`w-fit uppercase text-[9px] font-black ${
+                <div className="bg-white rounded-2xl border border-slate-100 p-4 flex flex-col justify-center">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Identity Check</p>
+                   <Badge className={`w-fit uppercase text-[8px] font-black h-5 border-none shadow-none ${
                      userData.profile?.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'
                    }`}>
                      {userData.profile?.verificationStatus || "UNVERIFIED"}
@@ -197,27 +206,29 @@ export default function UserDetailPage() {
         </div>
 
         {/* BOTTOM SECTION: TABS & REVIEWS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
            {/* Left side: Profile Details (Knowledge Base) */}
-           <div className="lg:col-span-2 space-y-8">
-              <Card className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden">
-                 <Tabs defaultValue="knowledge" className="w-full">
+           <div className="lg:col-span-2">
+              <Card className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden min-h-[500px]">
+                 <Tabs defaultValue={userData.role === 'CLIENT' ? 'projects' : 'knowledge'} className="w-full">
                     <div className="bg-slate-50/50 border-b p-4">
                        <TabsList className="bg-slate-200/50 p-1 rounded-2xl w-fit">
-                          <TabsTrigger value="knowledge" className="rounded-xl px-6 h-9 data-[state=active]:bg-white data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest text-slate-500 data-[state=active]:text-primary transition-all duration-300">Profile Intelligence</TabsTrigger>
+                          {userData.role !== 'CLIENT' && (
+                            <TabsTrigger value="knowledge" className="rounded-xl px-6 h-9 data-[state=active]:bg-white data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest text-slate-500 data-[state=active]:text-primary transition-all duration-300">Profile Intelligence</TabsTrigger>
+                          )}
                           <TabsTrigger value="projects" className="rounded-xl px-6 h-9 data-[state=active]:bg-white data-[state=active]:shadow-lg text-[10px] font-black uppercase tracking-widest text-slate-500 data-[state=active]:text-primary transition-all duration-300">Project History</TabsTrigger>
                        </TabsList>
                     </div>
 
                     <TabsContent value="knowledge" className="p-8 space-y-10">
-                       {/* Description */}
+                       {/* Synopsis */}
                        <div>
                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 pl-1 flex items-center gap-2">
-                             <FileText size={12} className="text-primary" /> Professional Synopsis
+                             <FileText size={12} className="text-primary" /> Synopsis
                           </h4>
                           <h1 className="text-xl font-black text-slate-800 mb-3">{userData.profile?.headline || "Multidisciplinary Professional"}</h1>
                           <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50/50 p-6 rounded-2xl border border-dashed border-slate-200 italic">
-                             "{userData.profile?.description || "No self-reported intelligence synopsis provided in this profile record."}"
+                             "{userData.profile?.description || "No records."}"
                           </p>
                        </div>
 
@@ -225,46 +236,38 @@ export default function UserDetailPage() {
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                           <div className="space-y-6">
                              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                <Award size={12} className="text-primary" /> Career Trajectory
+                                <Award size={12} className="text-primary" /> Experience
                              </h4>
-                             {Array.isArray(userData.profile?.experience) ? userData.profile.experience.map((exp: any, i: number) => (
-                               <div key={i} className="relative pl-6 before:absolute before:left-0 before:top-1.5 before:w-2 before:h-2 before:rounded-full before:bg-primary/20">
-                                  <p className="text-xs font-black text-slate-800 tracking-tight">{exp.position}</p>
-                                  <p className="text-[11px] font-bold text-slate-500 mb-1">{exp.company}</p>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{exp.duration}</p>
-                               </div>
-                             )) : <p className="text-xs font-bold text-slate-300 italic pl-1">No trajectory data detected.</p>}
+                             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-hide space-y-6">
+                                {Array.isArray(userData.profile?.experience) ? userData.profile.experience.map((exp: any, i: number) => (
+                                  <div key={i} className="relative pl-6 before:absolute before:left-0 before:top-1.5 before:w-2 before:h-2 before:rounded-full before:bg-primary/20">
+                                     <p className="text-xs font-black text-slate-800 tracking-tight">{exp.position}</p>
+                                     <p className="text-[11px] font-bold text-slate-500 mb-1">{exp.company}</p>
+                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{exp.duration}</p>
+                                  </div>
+                                )) : <p className="text-xs font-bold text-slate-300 italic pl-1">No trajectory data.</p>}
+                             </div>
                           </div>
 
                           <div className="space-y-6">
                              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-2">
-                                <GraduationCap size={12} className="text-primary" /> Intellectual Foundation
+                                <GraduationCap size={12} className="text-primary" /> Education
                              </h4>
-                             {Array.isArray(userData.profile?.education) ? userData.profile.education.map((edu: any, i: number) => (
-                               <div key={i} className="relative pl-6 before:absolute before:left-0 before:top-1.5 before:w-2 before:h-2 before:rounded-full before:bg-blue-400/20">
-                                  <p className="text-xs font-black text-slate-800 tracking-tight">{edu.degree}</p>
-                                  <p className="text-[11px] font-bold text-slate-500 mb-1">{edu.institution}</p>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{edu.year}</p>
-                               </div>
-                             )) : <p className="text-xs font-bold text-slate-300 italic pl-1">No certification records.</p>}
-                          </div>
-                       </div>
-
-                       {/* Skills Matrix */}
-                       <div>
-                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 pl-1 flex items-center gap-2">
-                             <Briefcase size={12} className="text-primary" /> Core Competency Matrix
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                             {userData.profile?.skills?.map((skill: string) => (
-                               <Badge key={skill} className="bg-white border-slate-200 text-slate-700 rounded-lg font-bold px-3 py-1 shadow-sm hover:border-primary transition-colors">{skill}</Badge>
-                             )) || <p className="text-xs font-bold text-slate-300 italic">No skills cataloged.</p>}
+                             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-hide space-y-6">
+                                {Array.isArray(userData.profile?.education) ? userData.profile.education.map((edu: any, i: number) => (
+                                  <div key={i} className="relative pl-6 before:absoluteRestore before:left-0 before:top-1.5 before:w-2 before:h-2 before:rounded-full before:bg-blue-400/20">
+                                     <p className="text-xs font-black text-slate-800 tracking-tight">{edu.degree}</p>
+                                     <p className="text-[11px] font-bold text-slate-500 mb-1">{edu.institution}</p>
+                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{edu.year}</p>
+                                  </div>
+                                )) : <p className="text-xs font-bold text-slate-300 italic pl-1">No certification records.</p>}
+                             </div>
                           </div>
                        </div>
                     </TabsContent>
 
                     <TabsContent value="projects" className="m-0 focus-visible:ring-0">
-                       <div className="divide-y divide-slate-100">
+                       <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto scrollbar-hide">
                           {userData.role === 'FREELANCER' ? 
                             (userData.contractsAsFreelancer.length > 0 ? userData.contractsAsFreelancer.map((c: any) => (
                               <div key={c.id} className="p-6 hover:bg-slate-50 transition-colors flex items-center justify-between">
@@ -296,11 +299,11 @@ export default function UserDetailPage() {
            </div>
 
            {/* Right side: Reputation Audit (Reviews Received) */}
-           <div className="lg:col-span-1 space-y-8">
-              <Card className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden h-full flex flex-col">
+           <div className="lg:col-span-1">
+              <Card className="border-none shadow-xl bg-white rounded-[2.5rem] overflow-hidden h-full flex flex-col sticky top-8">
                  <div className="bg-slate-50/50 border-b p-6">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                       <Star size={12} className="text-orange-400" /> Reputation Audit Trace
+                       <Star size={12} className="text-orange-400" /> Rating and Reviews
                     </h4>
                  </div>
                  <CardContent className="flex-1 p-0 overflow-y-auto max-h-[600px] scrollbar-hide">
