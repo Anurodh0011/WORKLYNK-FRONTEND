@@ -40,9 +40,13 @@ import AdminTable from "@/src/app/components/admin/AdminTable";
 import StatusChangeDialog from "@/src/app/components/admin/StatusChangeDialog";
 import StatusHistoryDialog from "@/src/app/components/admin/StatusHistoryDialog";
 
-export default function UsersTable() {
+interface UsersTableProps {
+  initialStatus?: "ALL" | "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
+}
+
+export default function UsersTable({ initialStatus = "ALL" }: UsersTableProps) {
   const [roleFilter, setRoleFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED" | "DEACTIVATED">(initialStatus);
   const [page, setPage] = useState(1);
 
   // Dialog states
@@ -100,49 +104,49 @@ export default function UsersTable() {
     {
       header: "Status",
       accessor: (user: any) => (
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-7 px-2.5 rounded-full text-[10px] font-black tracking-wider uppercase gap-1 border shadow-sm transition-all hover:ring-2 hover:ring-offset-1 hover:ring-primary/20 active:scale-95 ${
-                  user.status === 'ACTIVE'
-                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                    : user.status === 'SUSPENDED'
-                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                }`}
-              >
-                {user.status}
-                <ChevronDown size={10} className="opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="rounded-xl border-slate-200 shadow-xl min-w-[160px]">
-              <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Change Account Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="font-bold text-green-700 focus:bg-green-50 focus:text-green-700 rounded-lg cursor-pointer"
-                onClick={() => openStatusChange(user, 'ACTIVE')}
-              >
-                <UserRoundCheck size={14} className="mr-2" /> Activate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="font-bold text-yellow-700 focus:bg-yellow-50 focus:text-yellow-700 rounded-lg cursor-pointer"
-                onClick={() => openStatusChange(user, 'SUSPENDED')}
-              >
-                <ShieldAlert size={14} className="mr-2" /> Suspend
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="font-bold text-red-600 focus:bg-red-50 focus:text-red-600 rounded-lg cursor-pointer"
-                onClick={() => openStatusChange(user, 'DEACTIVATED')}
-              >
-                <Ban size={14} className="mr-2" /> Deactivate
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-7 px-2.5 rounded-full text-[10px] font-black tracking-wider uppercase gap-1 border shadow-sm transition-all hover:ring-2 hover:ring-offset-1 hover:ring-primary/20 active:scale-95 ${
+                    user.status === 'ACTIVE'
+                      ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                      : user.status === 'SUSPENDED'
+                      ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
+                      : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                  }`}
+                >
+                  {user.status}
+                  <ChevronDown size={10} className="opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="rounded-xl border-slate-200 shadow-xl min-w-[160px]">
+                <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Change Account Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="font-bold text-green-700 focus:bg-green-50 focus:text-green-700 rounded-lg cursor-pointer"
+                  onClick={() => openStatusChange(user, 'ACTIVE')}
+                >
+                  <UserRoundCheck size={14} className="mr-2" /> Activate
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="font-bold text-yellow-700 focus:bg-yellow-50 focus:text-yellow-700 rounded-lg cursor-pointer"
+                  onClick={() => openStatusChange(user, 'SUSPENDED')}
+                >
+                  <ShieldAlert size={14} className="mr-2" /> Suspend
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="font-bold text-red-600 focus:bg-red-50 focus:text-red-600 rounded-lg cursor-pointer"
+                  onClick={() => openStatusChange(user, 'DEACTIVATED')}
+                >
+                  <Ban size={14} className="mr-2" /> Deactivate
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {user._count?.statusHistory > 0 && (
             <Button
               variant="ghost"
               size="icon"
@@ -152,9 +156,24 @@ export default function UsersTable() {
             >
               <History size={14} />
             </Button>
+          </div>
+          {user.status === 'SUSPENDED' && user.suspensionDuration && (
+            <span className="text-[9px] font-black text-yellow-600/70 mt-1 pl-1 uppercase tracking-tighter">
+              Time: {user.suspensionDuration} Days
+            </span>
           )}
         </div>
       ),
+    },
+    {
+      header: "Last Login",
+       accessor: (user: any) => (
+         <span className="text-xs font-bold text-slate-500">
+           {user.lastLoginAt 
+             ? new Date(user.lastLoginAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+             : "Never"}
+         </span>
+       ),
     },
     {
       header: "Joined",
@@ -210,7 +229,7 @@ export default function UsersTable() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle className="text-xl font-bold text-slate-800 flex items-center">
               <Users className="mr-2 h-5 w-5 text-primary" />
-              Registered Users Directory
+              {statusFilter === "ALL" ? "Registered Users" : `${statusFilter.charAt(0) + statusFilter.slice(1).toLowerCase()} Users`} Directory
             </CardTitle>
             
             <div className="flex items-center gap-3">
@@ -233,7 +252,7 @@ export default function UsersTable() {
               <div className="flex items-center bg-white border rounded-xl px-3 py-1.5 shadow-sm">
                 <AlertCircle size={14} className="text-slate-400 mr-2" />
                 <span className="text-[10px] font-black text-slate-400 uppercase mr-2 tracking-wider">Status:</span>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
                   <SelectTrigger className="h-6 border-0 bg-transparent shadow-none focus:ring-0 w-[110px] text-xs font-bold p-0">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>

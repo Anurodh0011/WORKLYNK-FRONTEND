@@ -22,7 +22,10 @@ const ADMIN_MENU = [
     icon: User,
     submenus: [
       { name: "Dashboard", href: "/admin/user-management/user-dashboard" },
-      { name: "All Users", href: "/admin/user-management" }
+      { name: "All Users", href: "/admin/user-management" },
+      { name: "Active Users", href: "/admin/user-management/active" },
+      { name: "Suspended Users", href: "/admin/user-management/suspended" },
+      { name: "Deactivated Users", href: "/admin/user-management/deactivated" }
     ]
   },
   { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -135,7 +138,7 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
                   <div 
                     className={cn(
                       "ml-8 space-y-1 border-l-2 border-slate-100 pl-4 overflow-hidden transition-all duration-300 ease-in-out",
-                      isExpanded ? "max-h-40 opacity-100 py-1" : "max-h-0 opacity-0 py-0"
+                      isExpanded ? "max-h-64 opacity-100 py-1" : "max-h-0 opacity-0 py-0"
                     )}
                   >
                     {item.submenus.map(sub => {
