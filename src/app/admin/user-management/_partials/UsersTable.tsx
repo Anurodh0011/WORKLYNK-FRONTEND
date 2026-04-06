@@ -34,7 +34,8 @@ import {
   Ban,
   ChevronDown,
   TimerReset,
-  History
+  History,
+  Eye
 } from "lucide-react";
 import AdminTable from "@/src/app/components/admin/AdminTable";
 import StatusChangeDialog from "@/src/app/components/admin/StatusChangeDialog";
@@ -195,8 +196,11 @@ export default function UsersTable({ initialStatus = "ALL" }: UsersTableProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl w-48">
-            <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
-              <Users size={14} className="mr-2" /> View Profile
+            <DropdownMenuItem 
+              className="font-bold text-slate-700 rounded-lg cursor-pointer"
+              onClick={() => window.location.href = `/admin/user-management/${user.id}`}
+            >
+              <Eye size={14} className="mr-2" /> View Details
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="font-bold text-slate-700 rounded-lg"
