@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/u
 import { Button } from "@/src/app/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
 import { Filter, AlertCircle, Users } from "lucide-react";
+import AdminTable from "@/src/app/components/admin/AdminTable";
 
 export default function UsersTable() {
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -28,6 +29,65 @@ export default function UsersTable() {
     if (statusFilter !== "ALL" && u.status !== statusFilter) return false;
     return true;
   });
+
+  const columns = [
+    {
+      header: "User",
+      accessor: (user: any) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shadow-sm">
+            {user.name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-bold text-slate-800">{user.name}</p>
+            <p className="text-xs text-slate-500">{user.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Role",
+      accessor: (user: any) => (
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
+          user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+          user.role === 'CLIENT' ? 'bg-blue-100 text-blue-700' :
+          'bg-orange-100 text-orange-700'
+        }`}>
+          {user.role}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      accessor: (user: any) => (
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
+          user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+          user.status === 'SUSPENDED' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-red-100 text-red-700'
+        }`}>
+          {user.status}
+        </span>
+      ),
+    },
+    {
+      header: "Joined",
+      accessor: (user: any) => (
+        <span className="text-sm font-medium text-slate-600">
+          {new Date(user.createdAt).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      accessor: (user: any) => (
+        <Button variant="outline" size="sm" className="rounded-xl font-bold hover:bg-primary hover:text-white transition-colors">
+          Manage
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -82,68 +142,12 @@ export default function UsersTable() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b">
-                  <th className="p-4 font-bold text-slate-500 text-sm uppercase">User</th>
-                  <th className="p-4 font-bold text-slate-500 text-sm uppercase">Role</th>
-                  <th className="p-4 font-bold text-slate-500 text-sm uppercase">Status</th>
-                  <th className="p-4 font-bold text-slate-500 text-sm uppercase">Joined</th>
-                  <th className="p-4 font-bold text-slate-500 text-sm uppercase text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {isLoadingUsers ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading users...</td></tr>
-                ) : filteredUsers.length > 0 ? (
-                  filteredUsers.map((user: any) => (
-                    <tr key={user.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shadow-sm">
-                            {user.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-800">{user.name}</p>
-                            <p className="text-xs text-slate-500">{user.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
-                          user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                          user.role === 'CLIENT' ? 'bg-blue-100 text-blue-700' :
-                          'bg-orange-100 text-orange-700'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
-                          user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                          user.status === 'SUSPENDED' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm font-medium text-slate-600">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4 text-right">
-                        <Button variant="outline" size="sm" className="rounded-xl font-bold hover:bg-primary hover:text-white transition-colors">
-                          Manage
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-medium">No users match your filters.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <AdminTable 
+            columns={columns} 
+            data={filteredUsers} 
+            isLoading={isLoadingUsers}
+            emptyMessage="No users match your filters."
+          />
           
           {/* Pagination Controls */}
           {usersData?.data?.pagination && usersData.data.pagination.totalPages > 1 && (

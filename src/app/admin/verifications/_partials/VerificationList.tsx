@@ -7,10 +7,10 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Badge } from "@/src/app/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/app/components/ui/table";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { API_BASE_URL } from "@/src/helpers/config";
+import { API_BASE_URL, BACKEND_URL } from "@/src/helpers/config";
+import AdminTable from "@/src/app/components/admin/AdminTable";
 
 export default function VerificationList() {
   const { user, isLoading }: any = useAuthContext();
@@ -78,6 +78,107 @@ export default function VerificationList() {
     }
   };
 
+  const columns = [
+    {
+      header: "User Details",
+      accessor: (profile: any) => (
+        <div className="flex items-center gap-4">
+          {profile.profilePicture ? (
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/10 shadow-sm ring-2 ring-white">
+              <img src={`${BACKEND_URL}/${profile.profilePicture}`} alt="Pic" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black border-2 border-primary/10 ring-2 ring-white">
+              {profile.user?.name?.charAt(0)}
+            </div>
+          )}
+          <div>
+            <div className="font-black text-slate-800">{profile.user?.name}</div>
+            <div className="text-xs text-slate-500 font-semibold">{profile.user?.email}</div>
+            <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter mt-0.5">{profile.user?.phoneNumber || "No Phone"}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Role",
+      accessor: (profile: any) => (
+        <Badge variant="outline" className="rounded-lg font-bold border-slate-200 bg-slate-50/50">{profile.user?.role}</Badge>
+      ),
+    },
+    {
+      header: "Status",
+      accessor: (profile: any) => (
+        <Badge 
+          className={`rounded-lg font-bold shadow-sm ${
+            profile.verificationStatus === "VERIFIED" ? "bg-green-100 text-green-700 hover:bg-green-100" :
+            profile.verificationStatus === "PENDING" ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : 
+            profile.verificationStatus === "REJECTED" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-slate-100 text-slate-700 hover:bg-slate-100"
+          }`}
+        >
+          {profile.verificationStatus}
+        </Badge>
+      ),
+    },
+    {
+      header: "Document",
+      accessor: (profile: any) => (
+        <Badge variant="secondary" className="rounded-lg font-bold bg-slate-100 text-slate-600 border-none">{profile.documentType || "N/A"}</Badge>
+      ),
+    },
+    {
+      header: "Number",
+      accessor: (profile: any) => (
+        <span className="font-mono text-xs font-bold text-slate-600 whitespace-nowrap">{profile.panVatNumber || "-"}</span>
+      ),
+    },
+    {
+      header: "Image",
+      accessor: (profile: any) => (
+        profile.documentImage ? (
+          <a href={`${BACKEND_URL}/${profile.documentImage}`} target="_blank" rel="noreferrer" className="inline-flex items-center text-primary font-bold hover:underline text-xs bg-primary/5 px-2 py-1 rounded-md">
+            View Image
+          </a>
+        ) : (
+          <span className="text-muted-foreground text-xs font-medium italic">No Document</span>
+        )
+      ),
+    },
+    {
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      accessor: (profile: any) => (
+        profile.verificationStatus === "PENDING" && (
+          <div className="flex items-center justify-end gap-2">
+            {rejectId === profile.id ? (
+              <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
+                <Input 
+                  size={1} 
+                  className="w-40 h-9 text-xs rounded-xl font-medium border-red-200 focus-visible:ring-red-100 shadow-sm" 
+                  placeholder="Reason..." 
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)} 
+                />
+                <Button size="sm" variant="destructive" className="rounded-lg font-bold shadow-md shadow-red-100" onClick={() => handleVerify(profile.id, "REJECTED")}>Confirm</Button>
+                <Button size="sm" variant="ghost" className="rounded-lg font-bold px-2" onClick={() => { setRejectId(null); setRejectReason(""); }}>Cancel</Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" className="rounded-xl font-bold bg-green-600 hover:bg-green-700 shadow-md shadow-green-100 px-4" onClick={() => handleVerify(profile.id, "VERIFIED")}>
+                  Approve
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-xl font-bold border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 px-4" onClick={() => setRejectId(profile.id)}>
+                  Reject
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+      ),
+    },
+  ];
+
   if (isLoading || loading) return <div className="flex justify-center items-center min-h-[400px] text-primary font-bold animate-pulse">Loading verification requests...</div>;
   if (!user || user.role !== "ADMIN") return null;
 
@@ -105,104 +206,12 @@ export default function VerificationList() {
 
       <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-slate-50">
-              <TableRow className="hover:bg-transparent border-b">
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">User Details</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">Role</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">Status</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">Document</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">Number</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs">Image</TableHead>
-                <TableHead className="font-bold text-slate-500 py-4 px-6 uppercase text-xs text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {profiles.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-16 text-muted-foreground font-medium">
-                    No profiles found matching the selected filter.
-                  </TableCell>
-                </TableRow>
-              ) : profiles.map((profile) => (
-                <TableRow key={profile.id} className="hover:bg-slate-50 transition-colors">
-                  <TableCell className="font-medium p-6">
-                     <div className="flex items-center gap-4">
-                       {profile.profilePicture ? (
-                         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/10 shadow-sm ring-2 ring-white">
-                           <img src={profile.profilePicture} alt="Pic" className="w-full h-full object-cover" />
-                         </div>
-                       ) : (
-                         <div className="w-12 h-12 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black border-2 border-primary/10 ring-2 ring-white">
-                           {profile.user?.name?.charAt(0)}
-                         </div>
-                       )}
-                       <div>
-                         <div className="font-black text-slate-800">{profile.user?.name}</div>
-                         <div className="text-xs text-slate-500 font-semibold">{profile.user?.email}</div>
-                         <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter mt-0.5">{profile.user?.phoneNumber || "No Phone"}</div>
-                       </div>
-                     </div>
-                  </TableCell>
-                  <TableCell className="p-6">
-                    <Badge variant="outline" className="rounded-lg font-bold border-slate-200 bg-slate-50/50">{profile.user?.role}</Badge>
-                  </TableCell>
-                  <TableCell className="p-6">
-                    <Badge 
-                      className={`rounded-lg font-bold shadow-sm ${
-                        profile.verificationStatus === "VERIFIED" ? "bg-green-100 text-green-700 hover:bg-green-100" :
-                        profile.verificationStatus === "PENDING" ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : 
-                        profile.verificationStatus === "REJECTED" ? "bg-red-100 text-red-700 hover:bg-red-100" : "bg-slate-100 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      {profile.verificationStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="p-6">
-                    <Badge variant="secondary" className="rounded-lg font-bold bg-slate-100 text-slate-600 border-none">{profile.documentType || "N/A"}</Badge>
-                  </TableCell>
-                  <TableCell className="p-6 font-mono text-xs font-bold text-slate-600">{profile.panVatNumber || "-"}</TableCell>
-                  <TableCell className="p-6">
-                    {profile.documentImage ? (
-                      <a href={profile.documentImage} target="_blank" rel="noreferrer" className="inline-flex items-center text-primary font-bold hover:underline text-xs bg-primary/5 px-2 py-1 rounded-md">
-                        View Image
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground text-xs font-medium italic">No Document</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="p-6 text-right">
-                    {profile.verificationStatus === "PENDING" && (
-                      <div className="flex items-center justify-end gap-2">
-                        {rejectId === profile.id ? (
-                          <div className="flex items-center gap-2 animate-in slide-in-from-right-2 duration-300">
-                            <Input 
-                              size={1} 
-                              className="w-40 h-9 text-xs rounded-xl font-medium border-red-200 focus-visible:ring-red-100 shadow-sm" 
-                              placeholder="Reason..." 
-                              value={rejectReason}
-                              onChange={e => setRejectReason(e.target.value)} 
-                            />
-                            <Button size="sm" variant="destructive" className="rounded-lg font-bold shadow-md shadow-red-100" onClick={() => handleVerify(profile.id, "REJECTED")}>Confirm</Button>
-                            <Button size="sm" variant="ghost" className="rounded-lg font-bold px-2" onClick={() => { setRejectId(null); setRejectReason(""); }}>Cancel</Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Button size="sm" className="rounded-xl font-bold bg-green-600 hover:bg-green-700 shadow-md shadow-green-100 px-4" onClick={() => handleVerify(profile.id, "VERIFIED")}>
-                              Approve
-                            </Button>
-                            <Button size="sm" variant="outline" className="rounded-xl font-bold border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 px-4" onClick={() => setRejectId(profile.id)}>
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <AdminTable 
+            columns={columns} 
+            data={profiles} 
+            isLoading={loading}
+            emptyMessage="No profiles found matching the selected filter."
+          />
         </CardContent>
       </Card>
     </div>
