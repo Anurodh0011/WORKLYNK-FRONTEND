@@ -6,6 +6,7 @@ import { baseFetcher } from "@/src/helpers/fetcher";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { Users, Briefcase, TrendingUp, Calendar } from "lucide-react";
+import AdminKpiCard from "@/src/app/components/admin/AdminKpiCard";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -99,61 +100,33 @@ export default function DashboardMetrics() {
 
       {/* KPIs Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-none shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-blue-100 font-bold uppercase tracking-wider text-sm mb-1">Total Users</p>
-                <h3 className="text-4xl font-black">{metrics?.distribution ? Object.values(metrics.distribution).reduce((a: any, b: any) => a + b, 0) : "..."}</h3>
-              </div>
-              <div className="p-3 bg-white/20 rounded-2xl">
-                <Users size={24} className="text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Total Users"
+          value={metrics?.distribution ? (Object.values(metrics.distribution).reduce((a: any, b: any) => a + b, 0) as number) : "..."}
+          icon={Users}
+          variant="gradient-blue"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">Total Clients</p>
-                <h3 className="text-4xl font-black text-slate-800">{metrics?.distribution?.CLIENT || "..."}</h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-                <Briefcase size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Total Clients"
+          value={metrics?.distribution?.CLIENT || "..."}
+          icon={Briefcase}
+          iconClassName="bg-blue-50 text-blue-600"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">Total Freelancers</p>
-                <h3 className="text-4xl font-black text-slate-800">{metrics?.distribution?.FREELANCER || "..."}</h3>
-              </div>
-              <div className="p-3 bg-orange-50 text-orange-500 rounded-2xl">
-                <Briefcase size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Total Freelancers"
+          value={metrics?.distribution?.FREELANCER || "..."}
+          icon={Briefcase}
+          iconClassName="bg-orange-50 text-orange-500"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">Weekly Growth</p>
-                <h3 className="text-4xl font-black text-slate-800">+14%</h3>
-              </div>
-              <div className="p-3 bg-green-50 text-green-500 rounded-2xl">
-                <TrendingUp size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Weekly Growth"
+          value="+14%"
+          icon={TrendingUp}
+          iconClassName="bg-green-50 text-green-500"
+        />
       </div>
 
       {/* Charts & Visualizations Section */}

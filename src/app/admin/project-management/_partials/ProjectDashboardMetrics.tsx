@@ -13,6 +13,7 @@ import {
   Clock,
   Layout
 } from "lucide-react";
+import AdminKpiCard from "@/src/app/components/admin/AdminKpiCard";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -110,61 +111,33 @@ export default function ProjectDashboardMetrics() {
 
       {/* KPIs Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-none shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-orange-100 font-bold uppercase tracking-wider text-sm mb-1">Total Projects</p>
-                <h3 className="text-4xl font-black">{metrics?.distribution?.TOTAL || "..."}</h3>
-              </div>
-              <div className="p-3 bg-white/20 rounded-2xl">
-                <Briefcase size={24} className="text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Total Projects"
+          value={metrics?.distribution?.TOTAL || "..."}
+          icon={Briefcase}
+          variant="gradient-blue"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">In Progress</p>
-                <h3 className="text-4xl font-black text-slate-800">{metrics?.distribution?.IN_PROGRESS || "..."}</h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-                <Clock size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="In Progress"
+          value={metrics?.distribution?.IN_PROGRESS || "..."}
+          icon={Clock}
+          iconClassName="bg-blue-50 text-blue-600"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">Completed</p>
-                <h3 className="text-4xl font-black text-slate-800">{metrics?.distribution?.COMPLETED || "..."}</h3>
-              </div>
-              <div className="p-3 bg-green-50 text-green-500 rounded-2xl">
-                <CheckCircle2 size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Completed"
+          value={metrics?.distribution?.COMPLETED || "..."}
+          icon={CheckCircle2}
+          iconClassName="bg-green-50 text-green-500"
+        />
 
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden hover:-translate-y-1 transition-transform">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-1">Growth Index</p>
-                <h3 className="text-4xl font-black text-slate-800">+22%</h3>
-              </div>
-              <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl">
-                <TrendingUp size={24} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminKpiCard
+          title="Growth Index"
+          value="+22%"
+          icon={TrendingUp}
+          iconClassName="bg-purple-50 text-purple-600"
+        />
       </div>
 
       {/* Charts Section */}
