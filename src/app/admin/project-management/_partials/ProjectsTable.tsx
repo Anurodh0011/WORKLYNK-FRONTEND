@@ -128,7 +128,10 @@ export default function ProjectsTable({ initialStatus = "ALL" }: ProjectsTablePr
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl w-48">
-            <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
+            <DropdownMenuItem 
+              className="font-bold text-slate-700 rounded-lg cursor-pointer"
+              onClick={() => window.location.href = `/admin/project-management/${project.id}`}
+            >
               <Eye size={14} className="mr-2" /> View Details
             </DropdownMenuItem>
           </DropdownMenuContent>

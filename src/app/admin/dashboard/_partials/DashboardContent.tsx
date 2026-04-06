@@ -42,17 +42,6 @@ export default function DashboardContent() {
           </CardContent>
         </Card>
       </div>
-
-      <Card className="border-none shadow-xl bg-primary text-white rounded-3xl overflow-hidden p-2">
-        <CardHeader>
-          <CardTitle className="text-2xl font-black">Welcome to internal operations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="font-medium text-primary-foreground/90 text-lg">
-            Hello {user.name}, you are authenticated as an Administrator. Access user accounts, monitor systemic platform activity, adjust master configuration parameters, and verify platform identity tickets.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
