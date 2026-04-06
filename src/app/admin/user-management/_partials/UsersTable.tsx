@@ -2,24 +2,64 @@
 
 import React, { useState } from "react";
 import useSWR from "swr";
+import { mutate } from "swr";
 import { baseFetcher } from "@/src/helpers/fetcher";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
-import { Filter, AlertCircle, Users } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/app/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/app/components/ui/dropdown-menu";
+import { 
+  Filter, 
+  AlertCircle, 
+  Users, 
+  MoreVertical, 
+  ScrollText, 
+  ShieldAlert, 
+  UserRoundCheck, 
+  Mail, 
+  Ban,
+  ChevronDown,
+  TimerReset,
+  History
+} from "lucide-react";
 import AdminTable from "@/src/app/components/admin/AdminTable";
+import StatusChangeDialog from "@/src/app/components/admin/StatusChangeDialog";
+import StatusHistoryDialog from "@/src/app/components/admin/StatusHistoryDialog";
 
 export default function UsersTable() {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
 
+  // Dialog states
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isStatusHistoryOpen, setIsStatusHistoryOpen] = useState(false);
+  const [isStatusChangeOpen, setIsStatusChangeOpen] = useState(false);
+  const [targetStatus, setTargetStatus] = useState<string | null>(null);
+
+  const openStatusChange = (user: any, status: string) => {
+    setSelectedUser(user);
+    setTargetStatus(status);
+    setIsStatusChangeOpen(true);
+  };
+
   // Fetch users list
-  const { data: usersData, isLoading: isLoadingUsers } = useSWR(
-    `${API_BASE_URL}/admin/users?page=${page}&limit=10`,
-    baseFetcher
-  );
+  const usersUrl = `${API_BASE_URL}/admin/users?page=${page}&limit=10`;
+  const { data: usersData, isLoading: isLoadingUsers } = useSWR(usersUrl, baseFetcher);
 
   const users = usersData?.data?.users || [];
   
@@ -35,12 +75,12 @@ export default function UsersTable() {
       header: "User",
       accessor: (user: any) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shadow-sm">
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shadow-sm ring-2 ring-white">
             {user.name.charAt(0)}
           </div>
           <div>
-            <p className="font-bold text-slate-800">{user.name}</p>
-            <p className="text-xs text-slate-500">{user.email}</p>
+            <p className="font-bold text-slate-800 leading-tight">{user.name}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{user.email}</p>
           </div>
         </div>
       ),
@@ -48,7 +88,7 @@ export default function UsersTable() {
     {
       header: "Role",
       accessor: (user: any) => (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm ${
           user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
           user.role === 'CLIENT' ? 'bg-blue-100 text-blue-700' :
           'bg-orange-100 text-orange-700'
@@ -60,20 +100,67 @@ export default function UsersTable() {
     {
       header: "Status",
       accessor: (user: any) => (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
-          user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-          user.status === 'SUSPENDED' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-red-100 text-red-700'
-        }`}>
-          {user.status}
-        </span>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 px-2.5 rounded-full text-[10px] font-black tracking-wider uppercase gap-1 border shadow-sm transition-all hover:ring-2 hover:ring-offset-1 hover:ring-primary/20 active:scale-95 ${
+                  user.status === 'ACTIVE'
+                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                    : user.status === 'SUSPENDED'
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
+                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                }`}
+              >
+                {user.status}
+                <ChevronDown size={10} className="opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="rounded-xl border-slate-200 shadow-xl min-w-[160px]">
+              <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Change Account Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="font-bold text-green-700 focus:bg-green-50 focus:text-green-700 rounded-lg cursor-pointer"
+                onClick={() => openStatusChange(user, 'ACTIVE')}
+              >
+                <UserRoundCheck size={14} className="mr-2" /> Activate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-bold text-yellow-700 focus:bg-yellow-50 focus:text-yellow-700 rounded-lg cursor-pointer"
+                onClick={() => openStatusChange(user, 'SUSPENDED')}
+              >
+                <ShieldAlert size={14} className="mr-2" /> Suspend
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-bold text-red-600 focus:bg-red-50 focus:text-red-600 rounded-lg cursor-pointer"
+                onClick={() => openStatusChange(user, 'DEACTIVATED')}
+              >
+                <Ban size={14} className="mr-2" /> Deactivate
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {user._count?.statusHistory > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+              title="View status history"
+              onClick={() => { setSelectedUser(user); setIsStatusHistoryOpen(true); }}
+            >
+              <History size={14} />
+            </Button>
+          )}
+        </div>
       ),
     },
     {
       header: "Joined",
       accessor: (user: any) => (
-        <span className="text-sm font-medium text-slate-600">
-          {new Date(user.createdAt).toLocaleDateString()}
+        <span className="text-xs font-bold text-slate-500">
+          {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
       ),
     },
@@ -82,9 +169,35 @@ export default function UsersTable() {
       headerClassName: "text-right",
       className: "text-right",
       accessor: (user: any) => (
-        <Button variant="outline" size="sm" className="rounded-xl font-bold hover:bg-primary hover:text-white transition-colors">
-          Manage
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 h-8 w-8 text-slate-400">
+              <MoreVertical size={16} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl w-48">
+            <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase">User Operations</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
+              <Users size={14} className="mr-2" /> View Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem className="font-bold text-slate-700 rounded-lg">
+              <Mail size={14} className="mr-2" /> Send Message
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="font-bold text-slate-700 rounded-lg"
+              onClick={() => { setSelectedUser(user); setIsStatusHistoryOpen(true); }}
+            >
+              <ScrollText size={14} className="mr-2" /> Status History
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="font-bold text-red-600 focus:bg-red-50 rounded-lg"
+            >
+              <Ban size={14} className="mr-2" /> Delete Account
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -93,8 +206,8 @@ export default function UsersTable() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">All Users</h1>
-          <p className="text-muted-foreground font-medium">View and manage all members on the platform.</p>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">User Management</h1>
+          <p className="text-muted-foreground font-medium">Control platform access and monitor user audit trails.</p>
         </div>
       </div>
 
@@ -108,33 +221,33 @@ export default function UsersTable() {
             
             <div className="flex items-center gap-3">
               <div className="flex items-center bg-white border rounded-xl px-3 py-1.5 shadow-sm">
-                <Filter size={16} className="text-slate-400 mr-2" />
-                <span className="text-sm font-semibold text-slate-600 mr-2">Role:</span>
+                <Filter size={14} className="text-slate-400 mr-2" />
+                <span className="text-[10px] font-black text-slate-400 uppercase mr-2 tracking-wider">Role:</span>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="h-8 border-0 bg-transparent shadow-none focus:ring-0 w-[120px]">
+                  <SelectTrigger className="h-6 border-0 bg-transparent shadow-none focus:ring-0 w-[100px] text-xs font-bold p-0">
                     <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Roles</SelectItem>
-                    <SelectItem value="CLIENT">Clients</SelectItem>
-                    <SelectItem value="FREELANCER">Freelancers</SelectItem>
-                    <SelectItem value="ADMIN">Admins</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-200">
+                    <SelectItem value="ALL" className="text-xs font-bold">All Roles</SelectItem>
+                    <SelectItem value="CLIENT" className="text-xs font-bold">Clients</SelectItem>
+                    <SelectItem value="FREELANCER" className="text-xs font-bold">Freelancers</SelectItem>
+                    <SelectItem value="ADMIN" className="text-xs font-bold">Admins</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center bg-white border rounded-xl px-3 py-1.5 shadow-sm">
-                <AlertCircle size={16} className="text-slate-400 mr-2" />
-                <span className="text-sm font-semibold text-slate-600 mr-2">Status:</span>
+                <AlertCircle size={14} className="text-slate-400 mr-2" />
+                <span className="text-[10px] font-black text-slate-400 uppercase mr-2 tracking-wider">Status:</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 border-0 bg-transparent shadow-none focus:ring-0 w-[130px]">
+                  <SelectTrigger className="h-6 border-0 bg-transparent shadow-none focus:ring-0 w-[110px] text-xs font-bold p-0">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">All Status</SelectItem>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                    <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
+                  <SelectContent className="rounded-xl border-slate-200">
+                    <SelectItem value="ALL" className="text-xs font-bold">All Status</SelectItem>
+                    <SelectItem value="ACTIVE" className="text-xs font-bold">Active</SelectItem>
+                    <SelectItem value="SUSPENDED" className="text-xs font-bold">Suspended</SelectItem>
+                    <SelectItem value="DEACTIVATED" className="text-xs font-bold">Deactivated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -151,15 +264,15 @@ export default function UsersTable() {
           
           {/* Pagination Controls */}
           {usersData?.data?.pagination && usersData.data.pagination.totalPages > 1 && (
-            <div className="p-4 border-t flex items-center justify-between bg-slate-50">
-              <p className="text-sm font-medium text-slate-500">
-                Showing page {usersData.data.pagination.page} of {usersData.data.pagination.totalPages}
+            <div className="p-4 border-t flex items-center justify-between bg-slate-50/50">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Page {usersData.data.pagination.page} / {usersData.data.pagination.totalPages}
               </p>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-xl font-bold"
+                  className="rounded-xl font-bold h-9 px-4 border-slate-200 bg-white"
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
                 >
@@ -168,7 +281,7 @@ export default function UsersTable() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-xl font-bold"
+                  className="rounded-xl font-bold h-9 px-4 border-slate-200 bg-white"
                   disabled={page === usersData.data.pagination.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
@@ -179,6 +292,28 @@ export default function UsersTable() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      {selectedUser && (
+        <>
+          <StatusChangeDialog
+            user={selectedUser}
+            isOpen={isStatusChangeOpen}
+            initialStatus={targetStatus || undefined}
+            onClose={() => { 
+                setIsStatusChangeOpen(false); 
+                // Delay clearing the user to allow animations but ensure it's reset
+                setTimeout(() => { if (!isStatusChangeOpen) setSelectedUser(null); setTargetStatus(null); }, 300);
+            }}
+            onSuccess={() => mutate(usersUrl)}
+          />
+          <StatusHistoryDialog
+            user={selectedUser}
+            isOpen={isStatusHistoryOpen}
+            onClose={() => { setIsStatusHistoryOpen(false); setSelectedUser(null); }}
+          />
+        </>
+      )}
     </div>
   );
 }
