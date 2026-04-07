@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
 import BaseLayout from "@/src/app/components/base-layout";
@@ -19,7 +19,7 @@ import { API_BASE_URL } from "@/src/helpers/config";
 import { mutationFetcher } from "@/src/helpers/fetcher";
 import useSWRMutation from "swr/mutation";
 
-export default function VerifyOtp() {
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") || "";
@@ -65,42 +65,50 @@ export default function VerifyOtp() {
   };
 
   return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Verify Email</CardTitle>
+        <CardDescription>Enter the 6-digit code sent to {email || "your email"}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleVerify} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="code">Verification Code</Label>
+            <Input 
+              id="code" 
+              placeholder="123456" 
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required 
+              className="text-center text-2xl tracking-[0.5em] font-bold"
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isVerifying}>
+            {isVerifying ? "Verifying..." : "Verify OTP"}
+          </Button>
+        </form>
+        <div className="text-center">
+          <Button 
+            variant="link" 
+            onClick={handleResend} 
+            disabled={isResending || !email}
+          >
+            {isResending ? "Sending..." : "Didn't receive code? Resend"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function VerifyOtp() {
+  return (
     <BaseLayout>
       <div className="max-w-md mx-auto px-4 py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Verify Email</CardTitle>
-            <CardDescription>Enter the 6-digit code sent to {email || "your email"}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleVerify} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">Verification Code</Label>
-                <Input 
-                  id="code" 
-                  placeholder="123456" 
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  required 
-                  className="text-center text-2xl tracking-[0.5em] font-bold"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isVerifying}>
-                {isVerifying ? "Verifying..." : "Verify OTP"}
-              </Button>
-            </form>
-            <div className="text-center">
-              <Button 
-                variant="link" 
-                onClick={handleResend} 
-                disabled={isResending || !email}
-              >
-                {isResending ? "Sending..." : "Didn't receive code? Resend"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+          <VerifyOtpContent />
+        </Suspense>
       </div>
     </BaseLayout>
   );
