@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "vercel-build": "npm run prepare && next build"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
