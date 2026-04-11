@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   User as UserIcon
 } from "lucide-react";
+import { formatImageUrl } from "@/src/lib/utils";
 import { format } from "date-fns";
 
 export default function UserDetailPage() {
@@ -104,7 +105,7 @@ export default function UserDetailPage() {
           <Card className="lg:col-span-1 border-none shadow-xl bg-white rounded-[2rem] overflow-hidden p-6 flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-[1.5rem] bg-slate-50 border-4 border-white shadow-2xl relative mb-4 overflow-hidden">
                {userData.profile?.profilePicture ? (
-                 <img src={`${BACKEND_URL}/${userData.profile.profilePicture}`} className="w-full h-full object-cover" alt="" />
+                 <img src={formatImageUrl(userData.profile.profilePicture)} className="w-full h-full object-cover" alt="" />
                ) : (
                  <div className="w-full h-full flex items-center justify-center text-4xl font-black text-slate-200">{userData.name.charAt(0)}</div>
                )}
@@ -313,7 +314,7 @@ export default function UserDetailPage() {
                            <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-xl bg-slate-100 overflow-hidden">
                                  {review.reviewer.profile?.profilePicture ? (
-                                   <img src={`${BACKEND_URL}/${review.reviewer.profile.profilePicture}`} className="w-full h-full object-cover" alt="" />
+                                   <img src={formatImageUrl(review.reviewer.profile.profilePicture)} className="w-full h-full object-cover" alt="" />
                                  ) : (
                                    <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-300">{review.reviewer.name.charAt(0)}</div>
                                  )}

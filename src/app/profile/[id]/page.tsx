@@ -10,6 +10,7 @@ import { API_BASE_URL } from "@/src/helpers/config";
 import { Camera, CheckCircle, Clock, ShieldCheck, MapPin, Briefcase, GraduationCap, Award, Globe, CheckCircle2, Star, MessageSquare } from "lucide-react";
 import useSWR from "swr";
 import { baseFetcher } from "@/src/helpers/fetcher";
+import { formatImageUrl } from "@/src/lib/utils";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -29,12 +30,7 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-const getImageUrl = (path: string, baseUrl: string) => {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  const base = baseUrl.replace("/api", "");
-  return `${base}/${path.replace(/\\/g, "/")}`;
-};
+// Removed local getImageUrl in favor of global utility
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -61,7 +57,7 @@ export default function PublicProfilePage() {
               <CardContent className="pt-6 flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-secondary/20 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg mb-4">
                    {profile?.profilePicture ? (
-                     <img src={getImageUrl(profile.profilePicture, API_BASE_URL)} alt="Profile" className="w-full h-full object-cover" />
+                     <img src={formatImageUrl(profile.profilePicture)} alt="Profile" className="w-full h-full object-cover" />
                    ) : (
                      <Camera size={40} className="text-muted-foreground" />
                    )}
@@ -223,7 +219,7 @@ export default function PublicProfilePage() {
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
                                 {review.reviewer?.profile?.profilePicture ? (
-                                  <img src={getImageUrl(review.reviewer.profile.profilePicture, API_BASE_URL)} className="w-full h-full object-cover" alt={review.reviewer.name} />
+                                  <img src={formatImageUrl(review.reviewer.profile.profilePicture)} className="w-full h-full object-cover" alt={review.reviewer.name} />
                                 ) : (
                                   <Camera size={16} className="text-slate-400" />
                                 )}
