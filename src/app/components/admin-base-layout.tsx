@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
 import { Button } from "@/src/app/components/ui/button";
 import { toast } from "sonner";
-import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight, ChevronDown, Briefcase } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight, ChevronDown, Briefcase, Database } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/src/lib/utils";
 
@@ -40,6 +40,7 @@ const ADMIN_MENU = [
       { name: "Completed", href: "/admin/project-management/completed" }
     ]
   },
+  { name: "Activity Log", href: "/admin/activity-log", icon: Database },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
