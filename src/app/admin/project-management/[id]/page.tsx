@@ -26,6 +26,7 @@ import {
   Paperclip,
   Download
 } from "lucide-react";
+import { formatImageUrl } from "@/src/lib/utils";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/app/components/ui/tabs";
 
@@ -215,7 +216,7 @@ export default function ProjectDetailPage() {
                              <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black border-2 border-white shadow-xl ring-2 ring-primary/5 overflow-hidden">
                                    {pfImg ? (
-                                     <img src={`${BACKEND_URL}/${pfImg}`} className="w-full h-full object-cover" alt="" />
+                                     <img src={formatImageUrl(pfImg)} className="w-full h-full object-cover" alt="" />
                                    ) : (
                                      app.freelancer.name.charAt(0)
                                    )}
@@ -294,7 +295,7 @@ export default function ProjectDetailPage() {
                             <div className="flex items-center gap-5">
                                 <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black border-2 border-white shadow-xl ring-2 ring-primary/5 overflow-hidden">
                                    {cPfImg ? (
-                                     <img src={`${BACKEND_URL}/${cPfImg}`} className="w-full h-full object-cover" alt="" />
+                                     <img src={formatImageUrl(cPfImg)} className="w-full h-full object-cover" alt="" />
                                    ) : (
                                      contract.freelancer.name.charAt(0)
                                    )}

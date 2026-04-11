@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/src/app/components/ui/card";
 import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Badge } from "@/src/app/components/ui/badge";
+import { formatImageUrl } from "@/src/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/app/components/ui/select";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -85,7 +86,7 @@ export default function VerificationList() {
         <div className="flex items-center gap-4">
           {profile.profilePicture ? (
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/10 shadow-sm ring-2 ring-white">
-              <img src={`${BACKEND_URL}/${profile.profilePicture}`} alt="Pic" className="w-full h-full object-cover" />
+              <img src={formatImageUrl(profile.profilePicture)} alt="Pic" className="w-full h-full object-cover" />
             </div>
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black border-2 border-primary/10 ring-2 ring-white">
@@ -136,7 +137,7 @@ export default function VerificationList() {
       header: "Image",
       accessor: (profile: any) => (
         profile.documentImage ? (
-          <a href={`${BACKEND_URL}/${profile.documentImage}`} target="_blank" rel="noreferrer" className="inline-flex items-center text-primary font-bold hover:underline text-xs bg-primary/5 px-2 py-1 rounded-md">
+          <a href={formatImageUrl(profile.documentImage)} target="_blank" rel="noreferrer" className="inline-flex items-center text-primary font-bold hover:underline text-xs bg-primary/5 px-2 py-1 rounded-md">
             View Image
           </a>
         ) : (
