@@ -52,6 +52,8 @@ const EXPERIENCE_LEVELS = [
   { value: "EXPERT", label: "Expert" },
 ];
 
+const REQUIRED_MARK = <span className="text-red-500 ml-0.5">*</span>;
+
 interface ProjectFormData {
   title: string;
   category: string;
@@ -119,6 +121,20 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
               status: p.status || "DRAFT",
             });
             setExistingAttachments(p.attachments || []);
+
+            // Auto-advance to the correct step based on filled data
+            let targetStep = 1;
+            if (p.skillsRequired?.length > 0 || p.experienceLevel !== "INTERMEDIATE" || p.duration) {
+              targetStep = 2;
+            }
+            if (p.budgetMin !== undefined && p.budgetMin !== null && p.budgetMin !== "") {
+              targetStep = 3;
+            }
+            if (p.checklist && p.checklist.length > 0) {
+              targetStep = 4;
+            }
+            setCurrentStep(targetStep);
+
           }
         } catch (error) {
           console.error("Failed to fetch project:", error);
@@ -196,22 +212,31 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
   const validateStep = (step: number) => {
     switch (step) {
       case 1:
-        if (!formData.title || formData.title.length < 5) {
+        if (!formData.title || formData.title.trim().length < 5) {
           toast.error("Title must be at least 5 characters long");
+          return false;
+        }
+        if (formData.title.length > 200) {
+          toast.error("Title must be less than 200 characters");
           return false;
         }
         if (!formData.category) {
           toast.error("Please select a category");
           return false;
         }
-        if (!formData.description || formData.description.length < 20) {
-          toast.error("Description must be at least 20 characters long");
-          return false;
-        }
         return true;
+
       case 2:
         if (formData.skillsRequired.length === 0) {
           toast.error("Please add at least one skill");
+          return false;
+        }
+        if (!formData.experienceLevel) {
+          toast.error("Please select an experience level");
+          return false;
+        }
+        if (!formData.duration || isNaN(Number(formData.duration)) || Number(formData.duration) < 1) {
+          toast.error("Please enter a valid duration in days (minimum 1 day)");
           return false;
         }
         return true;
@@ -220,15 +245,29 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
           toast.error("Please enter a valid minimum budget");
           return false;
         }
+        if (Number(formData.budgetMin) < 0) {
+          toast.error("Minimum budget cannot be negative");
+          return false;
+        }
         if (formData.budgetType === "FIXED") {
           if (!formData.budgetMax || isNaN(Number(formData.budgetMax))) {
             toast.error("Please enter a valid maximum budget");
+            return false;
+          }
+          if (Number(formData.budgetMax) < 0) {
+            toast.error("Maximum budget cannot be negative");
             return false;
           }
           if (Number(formData.budgetMax) < Number(formData.budgetMin)) {
             toast.error("Maximum budget cannot be less than minimum budget");
             return false;
           }
+        }
+        return true;
+      case 4:
+        if (!formData.checklist || formData.checklist.length === 0) {
+          toast.error("Please add at least one freelancer checklist requirement");
+          return false;
         }
         return true;
       default:
@@ -314,7 +353,9 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
   const renderStepBasics = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="space-y-2">
-        <Label htmlFor="title">Project Title</Label>
+        <Label htmlFor="title">
+          Project Title {REQUIRED_MARK}
+        </Label>
         <Input
           id="title"
           name="title"
@@ -322,14 +363,16 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
           value={formData.title}
           onChange={handleInputChange}
           className="text-lg py-6"
+          maxLength={200}
         />
-        <p className="text-sm text-muted-foreground">
-          Catchy titles attract better freelancers.
-        </p>
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">Catchy titles attract better freelancers.</p>
+          <p className={`text-xs font-bold ${ formData.title.length > 180 ? 'text-red-500' : 'text-muted-foreground' }`}>{formData.title.length}/200</p>
+        </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category">Category {REQUIRED_MARK}</Label>
         <Select
           onValueChange={(value) => handleSelectChange("category", value)}
           defaultValue={formData.category}
@@ -364,7 +407,7 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
   const renderStepSkills = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="space-y-4">
-        <Label>Desired Skills</Label>
+        <Label>Desired Skills {REQUIRED_MARK}</Label>
         <div className="flex gap-2">
           <Input
             placeholder="e.g. React, Node.js, UI Design"
@@ -410,7 +453,7 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
         <div className="space-y-2">
-          <Label>Experience Level</Label>
+          <Label>Experience Level {REQUIRED_MARK}</Label>
           <Select
             onValueChange={(value) =>
               handleSelectChange("experienceLevel", value)
@@ -431,14 +474,17 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">Estimated Duration</Label>
+          <Label htmlFor="duration">Estimated Duration in Days {REQUIRED_MARK}</Label>
           <Input
             id="duration"
             name="duration"
-            placeholder="e.g. 3 months, 1 week"
+            type="number"
+            min="1"
+            placeholder="e.g. 14"
             value={formData.duration}
             onChange={handleInputChange}
           />
+          <p className="text-xs text-muted-foreground">Enter the number of days needed to complete the project.</p>
         </div>
       </div>
     </div>
@@ -478,22 +524,24 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
         <div className="space-y-2">
-          <Label htmlFor="budgetMin">Minimum Budget (NPR)</Label>
+          <Label htmlFor="budgetMin">Minimum Budget (NPR) {REQUIRED_MARK}</Label>
           <Input
             id="budgetMin"
             name="budgetMin"
             type="number"
+            min="0"
             placeholder="0"
             value={formData.budgetMin}
             onChange={handleInputChange}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="budgetMax">Maximum Budget (NPR)</Label>
+          <Label htmlFor="budgetMax">Maximum Budget (NPR) {REQUIRED_MARK}</Label>
           <Input
             id="budgetMax"
             name="budgetMax"
             type="number"
+            min="0"
             placeholder="5000"
             value={formData.budgetMax}
             onChange={handleInputChange}
@@ -506,7 +554,7 @@ export default function ProjectCreateForm({ projectId }: { projectId?: string })
   const renderStepFinalize = () => (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="space-y-4">
-        <Label>Freelancer Checklist (Requirements to meet)</Label>
+      <Label>Freelancer Checklist (at least 1 required) {REQUIRED_MARK}</Label>
         <div className="flex gap-2">
           <Input
             placeholder="e.g. Must have 5+ years of experience"

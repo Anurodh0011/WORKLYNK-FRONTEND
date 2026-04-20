@@ -8,7 +8,7 @@ import { Button } from "@/src/app/components/ui/button";
 import { Input } from "@/src/app/components/ui/input";
 import { Textarea } from "@/src/app/components/ui/textarea";
 import { Label } from "@/src/app/components/ui/label";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/src/helpers/config";
 import { Camera, CheckCircle, XCircle, Clock, ShieldCheck, MapPin, Briefcase, GraduationCap, Award, Globe, Edit3, CheckCircle2, Star, MessageSquare } from "lucide-react";
@@ -41,9 +41,11 @@ const getImageUrl = (path: string, baseUrl: string) => {
 };
 
 export default function ProfilePage() {
-  const { user, isLoading }: any = useAuthContext();
+  const { user, isLoading, fetchUser }: any = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
+  const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingBasic, setSavingBasic] = useState(false);
@@ -53,6 +55,7 @@ export default function ProfilePage() {
     profilePicture: "",
     description: "",
     phoneNumber: "",
+    name: "",
   });
 
   const [verifyData, setVerifyData] = useState({
@@ -68,8 +71,13 @@ export default function ProfilePage() {
       router.push("/auth/login");
     } else if (user) {
       fetchProfile();
+      
+      const tab = searchParams.get("tab");
+      if (tab === "settings") {
+        setActiveTab("settings");
+      }
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, searchParams, router]);
 
   const fetchProfile = async () => {
     try {
@@ -82,6 +90,7 @@ export default function ProfilePage() {
           profilePicture: data.data.profile.profilePicture || "",
           description: data.data.profile.description || "",
           phoneNumber: data.data.profile.user?.phoneNumber || "",
+          name: data.data.profile.user?.name || "",
         });
       }
     } catch (error) {
@@ -98,6 +107,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("description", basicData.description);
       formData.append("phoneNumber", basicData.phoneNumber);
+      formData.append("name", basicData.name);
       if (profilePictureFile) {
         formData.append("profilePicture", profilePictureFile);
       }
@@ -111,6 +121,7 @@ export default function ProfilePage() {
       if (data.success) {
         toast.success("Profile updated successfully");
         setProfile(data.data.profile);
+        await fetchUser();
       } else {
         toast.error(data.message || "Failed to update profile");
       }
@@ -148,6 +159,7 @@ export default function ProfilePage() {
         setProfile(data.data.profile);
         setVerifyData({ panVatNumber: "", documentType: "PAN", documentImage: "" });
         setDocumentFile(null);
+        await fetchUser();
       } else {
         toast.error(data.message || "Failed to submit verification");
       }
@@ -206,7 +218,11 @@ export default function ProfilePage() {
           </div>
 
           <div className="md:col-span-2 space-y-6">
-            <Tabs defaultValue={user.role === "FREELANCER" ? "profile" : "settings"} className="w-full">
+            <Tabs 
+              value={activeTab} 
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <div className="flex justify-between items-center mb-6">
                 <TabsList>
                   <TabsTrigger value="profile">{user.role === "FREELANCER" ? "Public Profile" : "My Project History"}</TabsTrigger>
@@ -391,8 +407,14 @@ export default function ProfilePage() {
                           type="file"
                           accept="image/*"
                           onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setProfilePictureFile(e.target.files[0]);
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                toast.error("Profile picture must be less than 2MB");
+                                e.target.value = "";
+                                return;
+                              }
+                              setProfilePictureFile(file);
                             }
                           }}
                         />
@@ -401,6 +423,15 @@ export default function ProfilePage() {
                         ) : basicData.profilePicture ? (
                           <p className="text-xs text-muted-foreground font-medium truncate max-w-sm">Current image saved</p>
                         ) : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Display Name</Label>
+                        <Input 
+                          id="name" 
+                          placeholder="Your Name" 
+                          value={basicData.name}
+                          onChange={(e) => setBasicData(prev => ({ ...prev, name: e.target.value }))}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="description">About You</Label>

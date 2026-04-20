@@ -164,6 +164,8 @@ export default function BoardPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [isCompleting, setIsCompleting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const [isCloseContractOpen, setIsCloseContractOpen] = useState(false);
+  const [isClosingContract, setIsClosingContract] = useState(false);
 
   const isProjectCompleted = kanbanData?.data?.contract?.status === "COMPLETED";
 
@@ -508,6 +510,32 @@ export default function BoardPage() {
     }
   };
 
+  const handleCloseContract = async () => {
+    setIsClosingContract(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/contracts/${contractId}/close`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Contract closed successfully");
+        setIsCloseContractOpen(false);
+        setTimeout(() => {
+          window.location.href = isFreelancer
+            ? "/dashboard/applications"
+            : "/dashboard/projects";
+        }, 1000);
+      } else {
+        toast.error(data.message || "Failed to close contract");
+      }
+    } catch {
+      toast.error("An error occurred");
+    } finally {
+      setIsClosingContract(false);
+    }
+  };
+
   if (isLoading)
     return (
       <BaseLayout>
@@ -714,6 +742,17 @@ export default function BoardPage() {
                         Complete Project
                       </Button>
                     )}
+                  {/* Close Contract - visible to both parties */}
+                  {kanbanData?.data?.contract?.status === "ACTIVE" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsCloseContractOpen(true)}
+                      className="ml-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold rounded-xl text-xs"
+                    >
+                      Close Contract
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="bg-green-50 text-green-700 border border-green-200 p-3 px-5 rounded-2xl shadow-sm flex items-center gap-3">
@@ -1367,6 +1406,29 @@ export default function BoardPage() {
               Submit Feedback
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Contract Confirmation Dialog */}
+      <Dialog open={isCloseContractOpen} onOpenChange={setIsCloseContractOpen}>
+        <DialogContent className="max-w-sm rounded-3xl p-8">
+          <DialogHeader>
+            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={28} className="text-red-500" />
+            </div>
+            <DialogTitle className="text-center text-xl font-black">Close Contract?</DialogTitle>
+            <p className="text-center text-sm text-muted-foreground pt-2">
+              This will close the contract and mark the project as completed. Both parties will be redirected to their dashboards. This action cannot be undone.
+            </p>
+          </DialogHeader>
+          <div className="flex gap-3 pt-4">
+            <Button variant="ghost" className="flex-1 rounded-xl font-bold" onClick={() => setIsCloseContractOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="flex-1 rounded-xl font-bold" onClick={handleCloseContract} disabled={isClosingContract}>
+              {isClosingContract ? "Closing..." : "Yes, Close Contract"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </BaseLayout>

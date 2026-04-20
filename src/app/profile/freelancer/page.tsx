@@ -188,9 +188,19 @@ export default function FreelancerProfileBuilder() {
                   <div className="flex flex-wrap gap-2 mt-3">
                     {skills.length === 0 && <span className="text-xs text-muted-foreground italic">No skills added yet</span>}
                     {skills.map(skill => (
-                      <Badge key={skill} variant="default" className="flex items-center gap-1 pl-2 pr-1 py-1">
-                        {skill}
-                        <X size={14} className="cursor-pointer hover:text-red-300" onClick={() => removeSkill(skill)}/>
+                      <Badge key={skill} variant="default" className="flex items-center gap-1 pl-3 pr-1.5 py-1.5 h-auto">
+                        <span className="text-sm font-medium">{skill}</span>
+                        <button 
+                          type="button" 
+                          className="ml-1 p-0.5 rounded-full hover:bg-slate-200 hover:text-red-500 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeSkill(skill);
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
                       </Badge>
                     ))}
                   </div>
