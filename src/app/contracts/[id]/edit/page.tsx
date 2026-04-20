@@ -50,7 +50,7 @@ export default function ContractEditPage() {
         })));
       } else {
         // Add one default milestone if empty
-        setMilestones([{ title: "Initial Milestone", description: "", amount: data.data.totalAmount.toString(), dueDate: "" }]);
+        setMilestones([{ title: "", description: "", amount: data.data.totalAmount.toString(), dueDate: "" }]);
       }
     }
   }, [data]);
@@ -70,25 +70,33 @@ export default function ContractEditPage() {
   };
 
   const handleSave = async (isSending = false) => {
-    // Validation
-    if (!description.trim()) {
-      toast.error("Please provide a contract description");
-      return;
-    }
+    // Validation for Sending only
+    if (isSending) {
+      if (!description.trim()) {
+        toast.error("Please provide a contract description");
+        return;
+      }
 
-    if (!startDate) {
-      toast.error("Please provide a Project Start Date");
-      return;
-    }
+      if (!startDate) {
+        toast.error("Please provide a Project Start Date");
+        return;
+      }
 
-    if (milestones.length === 0) {
-      toast.error("Please add at least one milestone");
-      return;
-    }
+      if (milestones.length === 0) {
+        toast.error("Please add at least one milestone");
+        return;
+      }
 
-    const totalMilestoneAmount = milestones.reduce((sum, m) => sum + parseFloat(m.amount || "0"), 0);
-    if (Math.abs(totalMilestoneAmount - (data?.data?.totalAmount || 0)) > 0.01) {
-       toast.warning(`Total milestone amount (रू ${totalMilestoneAmount}) does not match agreed bid (रू ${data?.data?.totalAmount})`);
+      const hasEmptyMilestoneTitles = milestones.some(m => !m.title.trim());
+      if (hasEmptyMilestoneTitles) {
+        toast.error("Please provide titles for all milestones");
+        return;
+      }
+
+      const totalMilestoneAmount = milestones.reduce((sum, m) => sum + parseFloat(m.amount || "0"), 0);
+      if (Math.abs(totalMilestoneAmount - (data?.data?.totalAmount || 0)) > 0.01) {
+         toast.warning(`Total milestone amount (रू ${totalMilestoneAmount}) does not match agreed bid (रू ${data?.data?.totalAmount})`);
+      }
     }
 
     setIsSaving(true);
