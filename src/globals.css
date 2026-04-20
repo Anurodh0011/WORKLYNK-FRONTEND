@@ -136,3 +136,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+.mobile-nav-items > a {
+  @apply flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-sm text-white/80 hover:text-white hover:bg-white/10 active:scale-[0.98];
+}
+
+.mobile-nav-items > a svg {
+  @apply text-secondary h-5 w-5;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
