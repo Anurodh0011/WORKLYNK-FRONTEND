@@ -356,7 +356,7 @@ export default function ProjectDetailsPage() {
                           <div className="flex flex-col gap-3 pt-4">
                              <Button 
                                className="w-full h-12 rounded-xl font-bold"
-                               onClick={() => router.push("/profile")}
+                               onClick={() => router.push("/profile?tab=settings")}
                              >
                                Verify Now
                              </Button>
