@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 import { baseFetcher, mutationFetcher } from "../../helpers/fetcher";
@@ -33,6 +34,19 @@ export const AuthProvider = ({ children }) => {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   });
+
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Redirect to login if user is not authenticated on protected routes
+  useEffect(() => {
+    const protectedRoutes = ["/dashboard", "/projects/new", "/contracts", "/profile", "/admin"];
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+    if (!isLoading && !userData?.data?.user && isProtectedRoute) {
+      router.push("/auth/login");
+    }
+  }, [userData, isLoading, pathname, router]);
 
   const fetchUser = useCallback(async () => {
     return await mutate();
