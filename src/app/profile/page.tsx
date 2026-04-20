@@ -14,6 +14,7 @@ import { API_BASE_URL } from "@/src/helpers/config";
 import { Camera, CheckCircle, XCircle, Clock, ShieldCheck, MapPin, Briefcase, GraduationCap, Award, Globe, Edit3, CheckCircle2, Star, MessageSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/app/components/ui/tabs";
 import { Badge } from "@/src/app/components/ui/badge";
+import { Suspense } from "react";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -41,6 +42,14 @@ const getImageUrl = (path: string, baseUrl: string) => {
 };
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading profile components...</div>}>
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const { user, isLoading, fetchUser }: any = useAuthContext();
   const router = useRouter();
   const searchParams = useSearchParams();
