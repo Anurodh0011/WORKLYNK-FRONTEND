@@ -257,50 +257,101 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-md hover:bg-primary-foreground/10"
+            className="md:hidden p-2 rounded-md hover:bg-primary-foreground/10 z-[60]"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Drawer Overlay */}
         {isOpen && (
-          <div className="md:hidden pb-4 pt-2 space-y-3 border-t border-white/10 mt-2">
-            <NavLinks />
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[50] md:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
 
-            {user ? (
-              <>
-                <Button
-                  onClick={handleLogout}
-                  className="w-full justify-start text-red-100 hover:bg-red-500/10"
-                  variant="ghost"
-                >
-                  <LogOut className="mr-2 h-4 w-4" /> Logout
-                </Button>
-              </>
-            ) : (
-              <div className="flex flex-col gap-2 pt-2">
-                <Link
-                  href="/auth/login"
-                  className="block py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Login
-                </Link>
-                <Button
-                  asChild
-                  className="w-full bg-secondary text-secondary-foreground"
-                >
-                  <Link href="/auth/register" onClick={() => setIsOpen(false)}>
-                    Sign Up
+        {/* Mobile Menu Drawer */}
+        <div className={`fixed top-0 left-0 h-full w-[280px] bg-primary shadow-2xl z-[55] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="p-6 border-b border-white/10">
+            <Link href="/" className="font-bold text-2xl flex items-center gap-2" onClick={() => setIsOpen(false)}>
+              <span className="bg-secondary text-primary px-2 rounded-lg">W</span>
+              Worklynk
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* User Profile Section in Mobile Menu */}
+            {user && (
+              <div className="bg-white/10 p-4 rounded-3xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center text-primary font-black text-xl shadow-lg">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-black truncate">{user.name}</span>
+                    <span className="text-[10px] font-bold opacity-60 truncate">{user.email}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link 
+                    href={user.role === "ADMIN" ? "/admin/dashboard" : "/dashboard"} 
+                    className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <LayoutDashboard size={20} className="text-secondary mb-1.5" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Dashboard</span>
                   </Link>
-                </Button>
+                  <Link 
+                    href="/profile" 
+                    className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <UserIcon size={20} className="text-secondary mb-1.5" />
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Profile</span>
+                  </Link>
+                </div>
               </div>
             )}
+
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 ml-2">Main Navigation</p>
+              <div className="flex flex-col gap-2 mobile-nav-items" onClick={() => setIsOpen(false)}>
+                <NavLinks />
+              </div>
+            </div>
+
+
+            {!user && (
+               <div className="space-y-3 pt-4">
+                  <Button asChild className="w-full h-12 rounded-2xl bg-secondary text-primary font-black" onClick={() => setIsOpen(false)}>
+                    <Link href="/auth/register">Sign Up Now</Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="w-full h-12 rounded-2xl font-black border border-white/10" onClick={() => setIsOpen(false)}>
+                    <Link href="/auth/login">Login</Link>
+                  </Button>
+               </div>
+            )}
           </div>
-        )}
+
+          {user && (
+            <div className="p-6 border-t border-white/10">
+              <Button 
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                variant="ghost" 
+                className="w-full h-12 justify-start rounded-2xl text-red-200 hover:bg-red-500/20 hover:text-white font-bold"
+              >
+                <LogOut size={18} className="mr-3" /> Sign Out
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
 }
+

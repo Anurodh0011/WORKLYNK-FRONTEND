@@ -38,6 +38,24 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Fetch meta settings (e.g. MAINTENANCE_MODE)
+  const { data: settingsData } = useSWR(`${API_BASE_URL}/auth/settings`, baseFetcher, {
+    refreshInterval: 60000, // Check every minute
+  });
+
+  // Maintenance mode redirect logic
+  useEffect(() => {
+    if (settingsData?.data?.MAINTENANCE_MODE === "true") {
+      const userRole = userData?.data?.user?.role;
+      if (userRole !== "ADMIN" && pathname !== "/maintenance") {
+        router.push("/maintenance");
+      }
+    } else if (pathname === "/maintenance" && settingsData?.data?.MAINTENANCE_MODE === "false") {
+      // Auto-recover if maintenance ends
+      router.push("/");
+    }
+  }, [settingsData, userData, pathname, router]);
+
   // Redirect to login if user is not authenticated on protected routes
   useEffect(() => {
     const protectedRoutes = ["/dashboard", "/projects/new", "/contracts", "/profile", "/admin"];
@@ -47,6 +65,7 @@ export const AuthProvider = ({ children }) => {
       router.push("/auth/login");
     }
   }, [userData, isLoading, pathname, router]);
+
 
   const fetchUser = useCallback(async () => {
     return await mutate();
