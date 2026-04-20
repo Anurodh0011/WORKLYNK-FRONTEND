@@ -37,6 +37,7 @@ import Link from "next/link";
 interface ProjectApplyFormProps {
   projectId: string;
   checklist?: string[];
+  initialData?: any;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -44,6 +45,7 @@ interface ProjectApplyFormProps {
 export function ProjectApplyForm({
   projectId,
   checklist = [],
+  initialData,
   onSuccess,
   onCancel,
 }: ProjectApplyFormProps) {
@@ -57,17 +59,18 @@ export function ProjectApplyForm({
     return profile?.headline && profile?.skills && profile.skills.length > 0;
   }, [profile]);
 
-  const [currentStep, setCurrentStep] = useState(checklist.length > 0 ? 1 : 2);
+  // If initialData exists, skip checklist since they probably already confirmed it.
+  const [currentStep, setCurrentStep] = useState((checklist.length > 0 && !initialData) ? 1 : 2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const [formData, setFormData] = useState({
-    bidAmount: "",
-    estimatedDays: "",
-    proposal: "",
+    bidAmount: initialData?.bidAmount ? String(initialData.bidAmount) : "",
+    estimatedDays: initialData?.estimatedDuration ? String(initialData.estimatedDuration) : (initialData?.estimatedDays ? String(initialData.estimatedDays) : ""),
+    proposal: initialData?.proposal || "",
   });
   const [files, setFiles] = useState<File[]>([]);
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set(initialData ? checklist.map((_, i) => i) : []));
 
   const isChecklistComplete = useMemo(() => {
     return checkedItems.size === checklist.length;

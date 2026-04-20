@@ -23,6 +23,7 @@ import { Button } from "@/src/app/components/ui/button";
 import Link from "next/link";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/src/app/components/ui/dialog";
+import { ProjectApplyForm } from "@/src/app/components/projects/ProjectApplyForm";
 
 export default function MyApplicationsPage() {
   const [selectedApp, setSelectedApp] = React.useState<any>(null);
@@ -152,36 +153,48 @@ export default function MyApplicationsPage() {
       </div>
       
       <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
-        <DialogContent className="rounded-3xl max-w-2xl px-4 sm:px-8 py-8">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight mb-2">My Proposal</DialogTitle>
-            <div className="flex items-center gap-2 mb-4">
-               {selectedApp && getStatusBadge(selectedApp.status)}
-               <span className="text-xs text-muted-foreground font-medium">Applied on {selectedApp && new Date(selectedApp.createdAt).toLocaleDateString()}</span>
-            </div>
-          </DialogHeader>
-          {selectedApp && (
-            <div className="space-y-6">
-               <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
-                 <h4 className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">Project Target</h4>
-                 <p className="text-lg font-bold text-slate-800 truncate">{selectedApp.project.title}</p>
-                 <div className="flex items-center gap-4 flex-wrap text-sm font-bold text-slate-600 mt-4">
-                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><IndianRupee size={16} className="text-primary" /> Bid: {selectedApp.bidAmount}</span>
-                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><Clock size={16} className="text-primary" /> Duration: {selectedApp.estimatedDays} days</span>
-                 </div>
-               </div>
-               
-               <div className="bg-primary/5 border border-primary/10 p-6 rounded-3xl">
-                 <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-4 uppercase tracking-widest"><FileText size={16} /> Cover Letter / Proposal</h4>
-                 <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">
-                   {selectedApp.proposal}
-                 </div>
-               </div>
-            </div>
+        <DialogContent className={`${selectedApp?.status === "DRAFT" ? "max-w-3xl max-h-[90vh] overflow-y-auto px-10 py-10" : "max-w-2xl px-4 sm:px-8 py-8"} rounded-3xl border-none`}>
+          {selectedApp?.status === "DRAFT" ? (
+            <ProjectApplyForm 
+              projectId={selectedApp.projectId}
+              checklist={selectedApp.project?.checklist || []}
+              initialData={selectedApp}
+              onSuccess={() => { setSelectedApp(null); mutate(); }}
+              onCancel={() => setSelectedApp(null)}
+            />
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight mb-2">My Proposal</DialogTitle>
+                <div className="flex items-center gap-2 mb-4">
+                   {selectedApp && getStatusBadge(selectedApp.status)}
+                   <span className="text-xs text-muted-foreground font-medium">Applied on {selectedApp && new Date(selectedApp.createdAt).toLocaleDateString()}</span>
+                </div>
+              </DialogHeader>
+              {selectedApp && (
+                <div className="space-y-6">
+                   <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                     <h4 className="text-xs font-bold text-slate-400 tracking-widest uppercase mb-1">Project Target</h4>
+                     <p className="text-lg font-bold text-slate-800 truncate">{selectedApp.project.title}</p>
+                     <div className="flex items-center gap-4 flex-wrap text-sm font-bold text-slate-600 mt-4">
+                       <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><IndianRupee size={16} className="text-primary" /> Bid: {selectedApp.bidAmount}</span>
+                       <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm"><Clock size={16} className="text-primary" /> Duration: {selectedApp.estimatedDays} days</span>
+                     </div>
+                   </div>
+                   
+                   <div className="bg-primary/5 border border-primary/10 p-6 rounded-3xl">
+                     <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-4 uppercase tracking-widest"><FileText size={16} /> Cover Letter / Proposal</h4>
+                     <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium">
+                       {selectedApp.proposal}
+                     </div>
+                   </div>
+                </div>
+              )}
+              <DialogFooter className="mt-6 border-t border-slate-100 pt-4">
+                <Button variant="outline" className="rounded-xl w-full h-12 font-bold" onClick={() => setSelectedApp(null)}>Close</Button>
+              </DialogFooter>
+            </>
           )}
-          <DialogFooter className="mt-6 border-t border-slate-100 pt-4">
-            <Button variant="outline" className="rounded-xl w-full h-12 font-bold" onClick={() => setSelectedApp(null)}>Close</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </BaseLayout>
