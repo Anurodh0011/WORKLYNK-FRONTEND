@@ -11,9 +11,9 @@ export function Footer() {
               <Image 
                 src="/Worklynk-logo-white.png" 
                 alt="Worklynk Logo" 
-                width={140} 
-                height={35} 
-                className="h-9 w-auto object-contain brightness-0 invert"
+                width={200} 
+                height={50} 
+                className="h-12 w-auto object-contain brightness-0 invert"
               />
             </Link>
             <p className="text-sm opacity-90">Connecting talented freelancers with projects worldwide.</p>

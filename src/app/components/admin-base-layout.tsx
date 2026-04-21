@@ -103,9 +103,9 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
           <Image 
             src="/Worklynk-logo-white.png" 
             alt="Worklynk Logo" 
-            width={120} 
-            height={30} 
-            className="h-8 w-auto object-contain"
+            width={200} 
+            height={50} 
+            className="h-12 w-auto object-contain"
           />
           <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Admin Portal</span>
         </div>

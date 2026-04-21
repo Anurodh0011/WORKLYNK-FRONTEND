@@ -177,9 +177,9 @@ export function Navbar() {
             <Image
               src="/Worklynk-logo-white.png"
               alt="Worklynk Logo"
-              width={150}
-              height={40}
-              className="h-10 w-auto object-contain"
+              width={200}
+              height={50}
+              className="h-12 w-auto object-contain"
               priority
             />
           </Link>
@@ -292,9 +292,9 @@ export function Navbar() {
               <Image
                 src="/Worklynk-logo-white.png"
                 alt="Worklynk Logo"
-                width={140}
-                height={35}
-                className="h-9 w-auto object-contain"
+                width={600}
+                height={400}
+                className="h-16 w-auto object-contain"
               />
             </Link>
           </div>
