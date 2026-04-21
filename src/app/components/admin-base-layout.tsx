@@ -7,6 +7,7 @@ import { Button } from "@/src/app/components/ui/button";
 import { toast } from "sonner";
 import { LogOut, User, LayoutDashboard, Settings, ShieldCheck, ChevronRight, ChevronDown, Briefcase, Database } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/src/lib/utils";
 
 interface AdminBaseLayoutProps {
@@ -98,9 +99,15 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside className="w-76 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm">
-        <div className="p-6 border-b flex items-center justify-center">
-          <h1 className="text-2xl font-black text-primary tracking-tight">WorkLynk</h1>
-          <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase">Admin</span>
+        <div className="p-6 border-b flex flex-col items-center justify-center gap-2">
+          <Image 
+            src="/Worklynk-logo.png" 
+            alt="Worklynk Logo" 
+            width={120} 
+            height={30} 
+            className="h-8 w-auto object-contain"
+          />
+          <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Admin Portal</span>
         </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {ADMIN_MENU.map((item) => {

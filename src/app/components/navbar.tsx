@@ -16,6 +16,7 @@ import {
   FileText,
   Globe
 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
@@ -172,9 +173,15 @@ export function Navbar() {
     <nav className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link href="/" className="font-bold text-2xl flex items-center gap-2">
-            <span className="bg-secondary text-primary px-2 rounded-lg">W</span>
-            Worklynk
+          <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/Worklynk-logo.png" 
+              alt="Worklynk Logo" 
+              width={150} 
+              height={40} 
+              className="h-10 w-auto object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop Menu */}
@@ -275,9 +282,14 @@ export function Navbar() {
         {/* Mobile Menu Drawer */}
         <div className={`fixed top-0 left-0 h-full w-[280px] bg-primary shadow-2xl z-[55] transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="p-6 border-b border-white/10">
-            <Link href="/" className="font-bold text-2xl flex items-center gap-2" onClick={() => setIsOpen(false)}>
-              <span className="bg-secondary text-primary px-2 rounded-lg">W</span>
-              Worklynk
+            <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
+              <Image 
+                src="/Worklynk-logo.png" 
+                alt="Worklynk Logo" 
+                width={140} 
+                height={35} 
+                className="h-9 w-auto object-contain"
+              />
             </Link>
           </div>
 

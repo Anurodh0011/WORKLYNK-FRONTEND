@@ -11,6 +11,10 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Worklynk",
   description: "Get Freelancers in Nepal",
+  icons: {
+    icon: "/web-logo.png",
+    apple: "/web-logo.png",
+  },
 };
 
 export default function RootLayout({

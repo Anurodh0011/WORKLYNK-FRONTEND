@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -6,7 +7,15 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h3 className="font-bold text-lg mb-4">Worklynk</h3>
+            <Link href="/" className="inline-block mb-4">
+              <Image 
+                src="/Worklynk-logo.png" 
+                alt="Worklynk Logo" 
+                width={140} 
+                height={35} 
+                className="h-9 w-auto object-contain brightness-0 invert"
+              />
+            </Link>
             <p className="text-sm opacity-90">Connecting talented freelancers with projects worldwide.</p>
           </div>
           <div>
