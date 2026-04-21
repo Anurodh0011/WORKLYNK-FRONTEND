@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
+import { cn } from "@/src/lib/utils";
 import BaseLayout from "@/src/app/components/base-layout";
 import {
   Card,
@@ -21,6 +22,7 @@ import { Label } from "@/src/app/components/ui/label";
 import { toast } from "sonner";
 import { registerSchema } from "@/src/utils/zod/auth.schema";
 import { Spinner } from "@/src/app/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react"; 
 
 export default function Register() {
   const router = useRouter();
@@ -37,6 +39,8 @@ export default function Register() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -139,24 +143,42 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={errors.password ? "border-red-500" : ""}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={cn(errors.password ? "border-red-500" : "", "pr-10")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input 
-                  id="confirmPassword" 
-                  type="password" 
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={errors.confirmPassword ? "border-red-500" : ""}
-                />
+                <div className="relative">
+                  <Input 
+                    id="confirmPassword" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={cn(errors.confirmPassword ? "border-red-500" : "", "pr-10")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
               </div>
               <div className="space-y-3 pt-2">

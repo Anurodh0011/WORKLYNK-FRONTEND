@@ -111,6 +111,12 @@ function ProfileContent() {
 
   const handleUpdateBasic = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!basicData.name || basicData.name.trim() === "") {
+      toast.error("Display name cannot be empty");
+      return;
+    }
+
     try {
       setSavingBasic(true);
       const formData = new FormData();

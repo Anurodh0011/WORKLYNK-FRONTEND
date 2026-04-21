@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/src/hooks/context/AuthContext";
+import { cn } from "@/src/lib/utils";
 import BaseLayout from "@/src/app/components/base-layout";
 import {
   Card,
@@ -16,7 +17,8 @@ import { Input } from "@/src/app/components/ui/input";
 import { Label } from "@/src/app/components/ui/label";
 import { toast } from "sonner";
 import { loginSchema } from "@/src/utils/zod/auth.schema";
-import { Spinner } from "@/src/app/components/ui/spinner"; 
+import { Spinner } from "@/src/app/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react"; 
 
 export default function Login() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function Login() {
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -100,13 +103,22 @@ export default function Login() {
                     Forgot password?
                   </a>
                 </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={errors.password ? "border-red-500" : ""}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={cn(errors.password ? "border-red-500" : "", "pr-10")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting || isAuthLoading}>
