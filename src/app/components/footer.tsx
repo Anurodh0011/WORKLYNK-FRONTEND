@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <Link href="/" className="inline-block mb-4">
               <Image 
-                src="/Worklynk-logo.png" 
+                src="/Worklynk-logo-white.png" 
                 alt="Worklynk Logo" 
                 width={140} 
                 height={35} 

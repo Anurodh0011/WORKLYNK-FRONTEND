@@ -101,7 +101,7 @@ export default function AdminBaseLayout({ children }: AdminBaseLayoutProps) {
       <aside className="w-76 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm">
         <div className="p-6 border-b flex flex-col items-center justify-center gap-2">
           <Image 
-            src="/Worklynk-logo.png" 
+            src="/Worklynk-logo-white.png" 
             alt="Worklynk Logo" 
             width={120} 
             height={30} 
