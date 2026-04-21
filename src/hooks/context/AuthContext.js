@@ -120,12 +120,15 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await logoutTrigger();
-      await mutate(null, false);
+      // Clear the local cache for /me and update state
+      await mutate(`${API_BASE_URL}/auth/me`, null, false);
       toast.success("Logged out successfully");
+      router.refresh(); // Force Next.js to refresh server components/state
     } catch (err) {
       toast.error("Logout failed");
     }
   };
+
 
   return (
     <AuthContext.Provider

@@ -130,6 +130,15 @@ export default function BoardPage() {
   const [newFeedback, setNewFeedback] = useState("");
   const [activeFeedbackTaskId, setActiveFeedbackTaskId] = useState<string | null>(null);
 
+  // Column Delete States
+  const [showDeleteColumnDialog, setShowDeleteColumnDialog] = useState(false);
+  const [activeColumnToDelete, setActiveColumnToDelete] = useState<string | null>(null);
+
+  // Task Edit/View States
+  const [showViewTaskDialog, setShowViewTaskDialog] = useState(false);
+  const [activeTaskToView, setActiveTaskToView] = useState<Task | null>(null);
+  const [isEditingTask, setIsEditingTask] = useState(false);
+
   const handleTaskFeedbackChange = (taskId: string, value: string) => {
     // left empty in case there's any ref to it
   };
@@ -302,25 +311,46 @@ export default function BoardPage() {
     if (!activeColumnId || !newTask.title.trim()) return;
 
     try {
-      const response = await mutationFetcher(`${API_BASE_URL}/kanban/tasks`, {
+      const isEditing = !!(newTask as any).id;
+      const url = isEditing ? `${API_BASE_URL}/kanban/tasks/${(newTask as any).id}` : `${API_BASE_URL}/kanban/tasks`;
+      const method = isEditing ? "PATCH" : "POST";
+
+      const response = await mutationFetcher(url, {
         arg: {
           contractId,
           columnId: activeColumnId,
           title: newTask.title,
           description: newTask.description,
         },
+        method
       } as any);
 
       if (response.success) {
-        toast.success("Task created");
+        toast.success(isEditing ? "Task updated" : "Task created");
         mutate(currentKanbanUrl);
         setShowTaskDialog(false);
         setNewTask({ title: "", description: "" });
       }
     } catch (err) {
-      toast.error("Failed to create task");
+      toast.error("Failed to process task");
     }
   };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const response = await mutationFetcher(`${API_BASE_URL}/kanban/tasks/${taskId}`, {
+        method: "DELETE"
+      } as any);
+      if (response.success) {
+        toast.success("Task deleted");
+        mutate(currentKanbanUrl);
+        setShowViewTaskDialog(false);
+      }
+    } catch (err) {
+      toast.error("Failed to delete task");
+    }
+  };
+
 
   const handleRenameColumn = async () => {
     if (!editingColumn || !editingColumn.name.trim()) return;
@@ -368,16 +398,11 @@ export default function BoardPage() {
     }
   };
 
-  const handleDeleteColumn = async (columnId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this container and all its tasks?",
-      )
-    )
-      return;
+  const handleDeleteColumn = async () => {
+    if (!activeColumnToDelete) return;
     try {
       const response = await mutationFetcher(
-        `${API_BASE_URL}/kanban/columns/${columnId}`,
+        `${API_BASE_URL}/kanban/columns/${activeColumnToDelete}`,
         {
           method: "DELETE",
         } as any,
@@ -386,11 +411,13 @@ export default function BoardPage() {
       if (response && response.success !== false) {
         toast.success("Container deleted");
         mutate(currentKanbanUrl);
+        setShowDeleteColumnDialog(false);
       }
     } catch (err) {
       toast.error("Failed to delete container");
     }
   };
+
 
   const handleSubmitMilestone = async () => {
     if (!activeMilestone) return;
@@ -817,9 +844,10 @@ export default function BoardPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white/50"
-                                    onClick={() =>
-                                      handleDeleteColumn(column.id)
-                                    }
+                                    onClick={() => {
+                                      setActiveColumnToDelete(column.id);
+                                      setShowDeleteColumnDialog(true);
+                                    }}
                                   >
                                     <Trash2 size={16} />
                                   </Button>
@@ -829,6 +857,7 @@ export default function BoardPage() {
                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-primary hover:bg-white/50"
                                     onClick={() => {
                                       setActiveColumnId(column.id);
+                                      setNewTask({ title: "", description: "" });
                                       setShowTaskDialog(true);
                                     }}
                                   >
@@ -890,29 +919,35 @@ export default function BoardPage() {
                                           )}
 
                                           <div className="flex items-center justify-between mt-3">
-                                            <div className="flex items-center gap-2">
-                                              <div className="w-6 h-6 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center">
-                                                <User
-                                                  size={12}
-                                                  className="text-primary"
-                                                />
-                                              </div>
-                                              {isClient && !isProjectCompleted && (
+                                              <div className="flex items-center gap-2">
                                                 <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  className="h-6 w-6 rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActiveFeedbackTaskId(task.id);
-                                                    setShowFeedbackDialog(true);
+                                                  variant="secondary"
+                                                  size="sm"
+                                                  className="h-6 px-2 rounded-md text-[10px] font-black uppercase tracking-tighter"
+                                                  onClick={() => {
+                                                    setActiveTaskToView(task);
+                                                    setShowViewTaskDialog(true);
                                                   }}
-                                                  title="Add feedback to this task"
                                                 >
-                                                  <Plus size={14} />
+                                                  View Details
                                                 </Button>
-                                              )}
-                                            </div>
+                                                {isClient && !isProjectCompleted && (
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setActiveFeedbackTaskId(task.id);
+                                                      setShowFeedbackDialog(true);
+                                                    }}
+                                                    title="Add feedback to this task"
+                                                  >
+                                                    <Plus size={14} />
+                                                  </Button>
+                                                )}
+                                              </div>
+
                                             <span className="text-[10px] font-black uppercase text-slate-400">
                                               #TK-{task.id.slice(0, 4)}
                                             </span>
@@ -1431,6 +1466,95 @@ export default function BoardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Column Confirmation Dialog */}
+      <Dialog open={showDeleteColumnDialog} onOpenChange={setShowDeleteColumnDialog}>
+        <DialogContent className="max-w-sm rounded-3xl p-8">
+          <DialogHeader>
+            <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={28} className="text-red-500" />
+            </div>
+            <DialogTitle className="text-center text-xl font-black">Delete Container?</DialogTitle>
+            <p className="text-center text-sm text-muted-foreground pt-2">
+              Are you sure you want to delete this container? All tasks within this list will be permanently removed. This action cannot be undone.
+            </p>
+          </DialogHeader>
+          <div className="flex gap-3 pt-4">
+            <Button variant="ghost" className="flex-1 rounded-xl font-bold" onClick={() => setShowDeleteColumnDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="flex-1 rounded-xl font-bold" onClick={handleDeleteColumn}>
+              Delete List
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Task Status / Details Dialog */}
+      <Dialog open={showViewTaskDialog} onOpenChange={setShowViewTaskDialog}>
+        <DialogContent className="rounded-3xl max-w-lg p-0 overflow-hidden">
+          <div className="bg-slate-50 p-8 border-b border-slate-200">
+            <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest mb-2">
+               <FileText size={14} /> Task Details
+            </div>
+            <h2 className="text-2xl font-black text-slate-800 leading-tight">
+              {activeTaskToView?.title}
+            </h2>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</Label>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                {activeTaskToView?.description || "No description provided."}
+              </p>
+            </div>
+
+            {activeTaskToView?.feedbacks && activeTaskToView.feedbacks.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Client Feedback</Label>
+                <div className="space-y-2">
+                  {activeTaskToView.feedbacks.map((fb: any) => (
+                    <div key={fb.id} className="bg-amber-50 p-4 rounded-2xl border border-amber-100 italic text-slate-700 text-xs">
+                      "{fb.content}"
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 flex items-center justify-between">
+               {!isReadOnly && isFreelancer && (
+                 <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl font-bold text-xs"
+                      onClick={() => {
+                        setNewTask({ title: activeTaskToView!.title, description: activeTaskToView!.description });
+                        (setNewTask as any)((prev: any) => ({ ...prev, id: activeTaskToView!.id }));
+                        setActiveColumnId(activeTaskToView!.columnId);
+                        setShowViewTaskDialog(false);
+                        setShowTaskDialog(true);
+                      }}
+                    >
+                      <Edit2 size={14} className="mr-2" /> Edit Task
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="rounded-xl font-bold text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => handleDeleteTask(activeTaskToView!.id)}
+                    >
+                      <Trash2 size={14} className="mr-2" /> Delete
+                    </Button>
+                 </div>
+               )}
+               <Button variant="ghost" onClick={() => setShowViewTaskDialog(false)} className="rounded-xl font-bold ml-auto text-xs">
+                 Close View
+               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </BaseLayout>
   );
 }
