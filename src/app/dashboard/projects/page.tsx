@@ -193,113 +193,119 @@ export default function ClientProjectsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredProjects.map((project: any) => (
-                <Card key={project.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          {getStatusBadge(project.status)}
-                          {project.contracts?.length > 0 && getContractBadge(project.contracts[0])}
-                          <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                            <Clock size={12} /> Posted on {new Date(project.createdAt).toLocaleDateString()}
-                          </span>
+              {filteredProjects.map((project: any) => {
+                const hasApprovedContract = project.contracts?.some((c: any) => ["ACTIVE", "COMPLETED", "ON_HOLD"].includes(c.status));
+                
+                return (
+                  <Card key={project.id} className="group hover:shadow-lg transition-all duration-300 border-primary/5 hover:border-primary/20 overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            {getStatusBadge(project.status)}
+                            {project.contracts?.length > 0 && getContractBadge(project.contracts[0])}
+                            <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                              <Clock size={12} /> Posted on {new Date(project.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-2">{project.title}</h3>
+                          <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5 font-medium text-foreground">
+                              <Users size={16} className="text-primary" /><span>{project._count.applications} Proposals</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <IndianRupee size={16} />
+                              <span>{project.budgetType === "FIXED" ? `${project.budgetMin} - ${project.budgetMax}` : `${project.budgetMin}/hr`}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FileText size={16} /><span>{project.category}</span>
+                            </div>
+                          </div>
                         </div>
-                        <h3 className="text-lg font-bold group-hover:text-primary transition-colors truncate mb-2">{project.title}</h3>
-                        <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5 font-medium text-foreground">
-                            <Users size={16} className="text-primary" /><span>{project._count.applications} Proposals</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <IndianRupee size={16} />
-                            <span>{project.budgetType === "FIXED" ? `${project.budgetMin} - ${project.budgetMax}` : `${project.budgetMin}/hr`}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <FileText size={16} /><span>{project.category}</span>
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-3">
-                        {project.status === "CANCELLED" ? (
-                          <Link href={`/projects/${project.id}`} className="flex-1 md:flex-none">
-                            <Button variant="outline" className="w-full gap-2 rounded-xl text-muted-foreground">
-                              View Details <Eye size={16} />
-                            </Button>
-                          </Link>
-                        ) : project.status === "DRAFT" ? (
-                          <Link href={`/projects/new?id=${project.id}`} className="flex-1 md:flex-none">
-                            <Button className="w-full gap-2 rounded-xl shadow-lg shadow-primary/20">Resume Creation <ChevronRight size={16} /></Button>
-                          </Link>
-                        ) : project.contracts?.[0]?.status === "ACTIVE" ? (
-                          <Link href={`/contracts/${project.contracts[0].id}/board`} className="flex-1 md:flex-none">
-                            <Button className="w-full gap-2 rounded-xl bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20 text-white">Project Board <Briefcase size={16} /></Button>
-                          </Link>
-                        ) : project.contracts?.[0]?.status === "COMPLETED" || project.status === "COMPLETED" ? (
-                          <Link href={`/contracts/${project.contracts?.[0]?.id}/board`} className="flex-1 md:flex-none">
-                            <Button variant="outline" className="w-full gap-2 rounded-xl border-green-500 text-green-600 hover:bg-green-50">View Completed <CheckCircle2 size={16} /></Button>
-                          </Link>
-                        ) : (
-                          <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
-                            <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
-                              Review Proposals <ChevronRight size={16} />
-                            </Button>
-                          </Link>
-                        )}
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-10 w-10"><MoreVertical size={20} /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-primary/10">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/projects/${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                                <Eye size={16} /> View Details
-                              </Link>
-                            </DropdownMenuItem>
-                            {project.contracts?.[0]?.status === "ACTIVE" && (
+                        <div className="flex items-center gap-3">
+                          {project.status === "CANCELLED" ? (
+                            <Link href={`/projects/${project.id}`} className="flex-1 md:flex-none">
+                              <Button variant="outline" className="w-full gap-2 rounded-xl text-muted-foreground">
+                                View Details <Eye size={16} />
+                              </Button>
+                            </Link>
+                          ) : project.status === "DRAFT" ? (
+                            <Link href={`/projects/new?id=${project.id}`} className="flex-1 md:flex-none">
+                              <Button className="w-full gap-2 rounded-xl shadow-lg shadow-primary/20">Resume Creation <ChevronRight size={16} /></Button>
+                            </Link>
+                          ) : project.contracts?.[0]?.status === "ACTIVE" ? (
+                            <Link href={`/contracts/${project.contracts[0].id}/board`} className="flex-1 md:flex-none">
+                              <Button className="w-full gap-2 rounded-xl bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20 text-white">Project Board <Briefcase size={16} /></Button>
+                            </Link>
+                          ) : project.contracts?.[0]?.status === "COMPLETED" || project.status === "COMPLETED" ? (
+                            <Link href={`/contracts/${project.contracts?.[0]?.id}/board`} className="flex-1 md:flex-none">
+                              <Button variant="outline" className="w-full gap-2 rounded-xl border-green-500 text-green-600 hover:bg-green-50">View Completed <CheckCircle2 size={16} /></Button>
+                            </Link>
+                          ) : (
+                            <Link href={`/projects/${project.id}/applications`} className="flex-1 md:flex-none">
+                              <Button variant="outline" className="w-full gap-2 rounded-xl group-hover:bg-primary/5 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                                Review Proposals <ChevronRight size={16} />
+                              </Button>
+                            </Link>
+                          )}
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-10 w-10"><MoreVertical size={20} /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 shadow-xl border-primary/10">
                               <DropdownMenuItem asChild>
-                                <Link href={`/contracts/${project.contracts[0].id}/view`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                                  <FileText size={16} /> View Contract
+                                <Link href={`/projects/${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                  <Eye size={16} /> View Details
                                 </Link>
                               </DropdownMenuItem>
-                            )}
-                            {project._count.applications === 0 && project.status !== "CANCELLED" && (
-                              <DropdownMenuItem asChild>
-                                <Link href={`/projects/new?id=${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
-                                  <Edit3 size={16} /> {project.status === "DRAFT" ? "Continue Editing" : "Edit Project"}
-                                </Link>
-                              </DropdownMenuItem>
-                            )}
-                            {!["CANCELLED", "COMPLETED"].includes(project.status) && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-700 focus:bg-red-50"
-                                  onClick={() => setProjectToClose(project)}
-                                >
-                                  <XCircle size={16} /> Close Project
+                              {project.contracts?.[0]?.status === "ACTIVE" && (
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/contracts/${project.contracts[0].id}/view`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                    <FileText size={16} /> View Contract
+                                  </Link>
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                            {project.status === "CANCELLED" && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 focus:text-green-700 focus:bg-green-50"
-                                  onClick={() => handleReopenProject(project)}
-                                >
-                                  <RotateCcw size={16} /> Reopen Project
+                              )}
+                              {project._count.applications === 0 && project.status !== "CANCELLED" && (
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/projects/new?id=${project.id}`} className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg">
+                                    <Edit3 size={16} /> {project.status === "DRAFT" ? "Continue Editing" : "Edit Project"}
+                                  </Link>
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              )}
+                              {!["CANCELLED", "COMPLETED"].includes(project.status) && !hasApprovedContract && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-700 focus:bg-red-50"
+                                    onClick={() => setProjectToClose(project)}
+                                  >
+                                    <XCircle size={16} /> Close Project
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {project.status === "CANCELLED" && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg text-green-600 hover:text-green-700 hover:bg-green-50 focus:text-green-700 focus:bg-green-50"
+                                    onClick={() => handleReopenProject(project)}
+                                  >
+                                    <RotateCcw size={16} /> Reopen Project
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+
             </div>
           )}
         </Tabs>
