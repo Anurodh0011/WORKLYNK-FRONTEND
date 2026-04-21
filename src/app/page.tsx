@@ -187,7 +187,7 @@ export default function Home() {
                 <Button asChild size="lg" className="h-16 px-12 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black text-xl">
                     <Link href="/auth/register">Join as Client</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="h-16 px-12 rounded-2xl border-white text-white hover:bg-white/10 font-black text-xl">
+                <Button asChild size="lg" variant="outline" className="h-16 px-12 rounded-2xl border-white text-primary hover:bg-white/10 font-black text-xl">
                     <Link href="/auth/register">Join as Freelancer</Link>
                 </Button>
             </div>
